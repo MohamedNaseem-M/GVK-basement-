@@ -1,0 +1,137 @@
+/* Global Styles & MapLibre GL Integration */
+@import 'maplibre-gl/dist/maplibre-gl.css';
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background-color: #0f172a;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Custom Project Location Marker Pin Styles */
+.custom-project-marker {
+  cursor: pointer;
+  z-index: 5;
+
+  .marker-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+  }
+
+  .marker-pulse {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(2, 132, 199, 0.35);
+    animation: marker-pulse-anim 2s infinite ease-out;
+  }
+
+  .marker-pin {
+    width: 36px;
+    height: 36px;
+    border-radius: 50% 50% 50% 0;
+    background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+    transform: rotate(-45deg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35), inset 0 2px 4px rgba(255, 255, 255, 0.4);
+    border: 2px solid #ffffff;
+    transition: transform 0.2s ease;
+
+    svg {
+      width: 18px;
+      height: 18px;
+      color: #ffffff;
+      transform: rotate(45deg);
+    }
+  }
+
+  &:hover .marker-pin {
+    transform: rotate(-45deg) scale(1.15);
+  }
+}
+
+/* Marker Interactive Popup Styling */
+.maplibregl-popup-content {
+  background: rgba(15, 23, 42, 0.92) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 12px !important;
+  padding: 12px 16px !important;
+  color: #f8fafc !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4) !important;
+}
+
+.maplibregl-popup-anchor-top .maplibregl-popup-tip {
+  border-bottom-color: rgba(15, 23, 42, 0.92) !important;
+}
+.maplibregl-popup-anchor-bottom .maplibregl-popup-tip {
+  border-top-color: rgba(15, 23, 42, 0.92) !important;
+}
+
+.marker-popup-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  .popup-tag {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    color: #38bdf8;
+    text-transform: uppercase;
+  }
+
+  .popup-title {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 700;
+    color: #ffffff;
+  }
+
+  .popup-coords {
+    margin: 4px 0 0 0;
+    font-size: 11px;
+    color: #94a3b8;
+    line-height: 1.4;
+
+    strong {
+      color: #e2e8f0;
+    }
+  }
+}
+
+.maplibregl-popup-close-button {
+  color: #94a3b8 !important;
+  font-size: 16px !important;
+  padding: 4px 8px !important;
+
+  &:hover {
+    color: #ffffff !important;
+    background: transparent !important;
+  }
+}
+
+@keyframes marker-pulse-anim {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
