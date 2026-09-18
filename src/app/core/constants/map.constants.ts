@@ -54,6 +54,35 @@ export const BASEMAP_STYLES = {
         tileSize: 256,
         maxzoom: 19,
         attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+      },
+      'esri-boundaries': {
+        type: 'raster',
+        tiles: [
+          'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'
+        ],
+        tileSize: 256,
+        maxzoom: 19,
+        attribution: 'Labels &copy; Esri'
+      },
+      'carto-labels': {
+        type: 'raster',
+        tiles: [
+          'https://a.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}.png',
+          'https://b.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}.png',
+          'https://c.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}.png'
+        ],
+        tileSize: 256,
+        maxzoom: 19,
+        attribution: '&copy; CARTO &copy; OpenStreetMap'
+      },
+      'esri-transportation': {
+        type: 'raster',
+        tiles: [
+          'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}'
+        ],
+        tileSize: 256,
+        maxzoom: 19,
+        attribution: 'Roads &copy; Esri'
       }
     },
     layers: [
@@ -61,6 +90,27 @@ export const BASEMAP_STYLES = {
         id: 'esri-satellite-layer',
         type: 'raster',
         source: 'esri-satellite',
+        minzoom: 0,
+        maxzoom: 19
+      },
+      {
+        id: 'esri-transportation-layer',
+        type: 'raster',
+        source: 'esri-transportation',
+        minzoom: 0,
+        maxzoom: 19
+      },
+      {
+        id: 'esri-boundaries-layer',
+        type: 'raster',
+        source: 'esri-boundaries',
+        minzoom: 0,
+        maxzoom: 19
+      },
+      {
+        id: 'carto-labels-layer',
+        type: 'raster',
+        source: 'carto-labels',
         minzoom: 0,
         maxzoom: 19
       }
