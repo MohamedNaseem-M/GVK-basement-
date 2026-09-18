@@ -101,21 +101,55 @@ export class MapService {
    */
   private setup3DRotationDragHandlers(mapInstance: maplibregl.Map): void {
     const canvas = mapInstance.getCanvas();
+    const activePointers = new Map<number, { x: number; y: number }>();
     let isDragging3D = false;
     let startX = 0;
     let startY = 0;
     let startBearing = 0;
     let startPitch = 0;
 
+    const stop3DDrag = (e: Event) => {
+      const pe = e as PointerEvent;
+      if (pe.pointerId !== undefined) {
+        activePointers.delete(pe.pointerId);
+      } else {
+        activePointers.clear();
+      }
+
+      if (activePointers.size !== 1) {
+        isDragging3D = false;
+        try {
+          if (pe.pointerId !== undefined && canvas.hasPointerCapture && canvas.hasPointerCapture(pe.pointerId)) {
+            canvas.releasePointerCapture(pe.pointerId);
+          }
+        } catch (err) {}
+        mapInstance.dragPan.enable();
+      }
+    };
+
     canvas.addEventListener('pointerdown', (e: PointerEvent) => {
-      // Only capture 3D drag rotation when in 3D mode (pitch > 15) and left click / single touch
+      activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+      // If multi-touch (2+ fingers), hand over to native MapLibre pinch-zoom & touchZoomRotate!
+      if (activePointers.size > 1) {
+        isDragging3D = false;
+        mapInstance.dragPan.enable();
+        try {
+          if (canvas.hasPointerCapture && canvas.hasPointerCapture(e.pointerId)) {
+            canvas.releasePointerCapture(e.pointerId);
+          }
+        } catch (err) {}
+        return;
+      }
+
+      // Only capture single-pointer 3D drag rotation when in 3D mode (pitch > 15)
       if (!this.is3DMode() || (e.button !== 0 && e.pointerType === 'mouse')) {
         return;
       }
 
       // Do not hijack clicks on popup buttons or controls
       const target = e.target as HTMLElement;
-      if (target && target.closest && target.closest('.maplibregl-popup, .touch-btn')) {
+      if (target && target.closest && target.closest('.maplibregl-popup, .touch-btn, .marker-container')) {
         return;
       }
 
@@ -125,18 +159,17 @@ export class MapService {
       startBearing = mapInstance.getBearing();
       startPitch = mapInstance.getPitch();
 
-      try {
-        canvas.setPointerCapture(e.pointerId);
-      } catch (err) {
-        // Fallback for browsers that do not support setPointerCapture
-      }
-
-      // Temporarily disable map dragPan so camera rotates around location without drifting
+      // Disable dragPan ONLY during single-finger 3D rotation drag
       mapInstance.dragPan.disable();
     });
 
     canvas.addEventListener('pointermove', (e: PointerEvent) => {
-      if (!isDragging3D || !this.is3DMode()) {
+      if (activePointers.has(e.pointerId)) {
+        activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      }
+
+      // If more than 1 finger is active on screen, abort custom 3D rotation to allow native 2-finger pinch zoom
+      if (!isDragging3D || !this.is3DMode() || activePointers.size > 1) {
         return;
       }
 
@@ -156,22 +189,9 @@ export class MapService {
       });
     });
 
-    const stop3DDrag = (e: PointerEvent) => {
-      if (!isDragging3D) return;
-
-      isDragging3D = false;
-      try {
-        canvas.releasePointerCapture(e.pointerId);
-      } catch (err) {
-        // Ignore fallback
-      }
-
-      // Re-enable standard dragPan
-      mapInstance.dragPan.enable();
-    };
-
     canvas.addEventListener('pointerup', stop3DDrag);
     canvas.addEventListener('pointercancel', stop3DDrag);
+    canvas.addEventListener('mouseleave', stop3DDrag);
   }
 
   /**
