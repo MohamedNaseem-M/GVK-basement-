@@ -49,11 +49,14 @@ export class MapService {
 
     this.map = mapInstance;
 
-    // Enable native mouse drag & touch rotation for full 360-degree continuous rotation
+    // Enable native MapLibre rotation & pitch controls
     mapInstance.dragRotate.enable();
     mapInstance.touchZoomRotate.enable();
     mapInstance.touchZoomRotate.enableRotation();
     mapInstance.touchPitch.enable();
+
+    // Setup custom 3D drag-to-bearing pointer interaction (3D mode only)
+    this.setup3DRotationDragHandlers(mapInstance);
 
     // Add standard touch-friendly navigation controls (bottom-right compass/pitch)
     mapInstance.addControl(
@@ -91,6 +94,84 @@ export class MapService {
     });
 
     return mapInstance;
+  }
+
+  /**
+   * Sets up smooth 360-degree pointer drag rotation handlers (active ONLY in 3D mode)
+   */
+  private setup3DRotationDragHandlers(mapInstance: maplibregl.Map): void {
+    const canvas = mapInstance.getCanvas();
+    let isDragging3D = false;
+    let startX = 0;
+    let startY = 0;
+    let startBearing = 0;
+    let startPitch = 0;
+
+    canvas.addEventListener('pointerdown', (e: PointerEvent) => {
+      // Only capture 3D drag rotation when in 3D mode (pitch > 15) and left click / single touch
+      if (!this.is3DMode() || (e.button !== 0 && e.pointerType === 'mouse')) {
+        return;
+      }
+
+      // Do not hijack clicks on popup buttons or controls
+      const target = e.target as HTMLElement;
+      if (target && target.closest && target.closest('.maplibregl-popup, .touch-btn')) {
+        return;
+      }
+
+      isDragging3D = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      startBearing = mapInstance.getBearing();
+      startPitch = mapInstance.getPitch();
+
+      try {
+        canvas.setPointerCapture(e.pointerId);
+      } catch (err) {
+        // Fallback for browsers that do not support setPointerCapture
+      }
+
+      // Temporarily disable map dragPan so camera rotates around location without drifting
+      mapInstance.dragPan.disable();
+    });
+
+    canvas.addEventListener('pointermove', (e: PointerEvent) => {
+      if (!isDragging3D || !this.is3DMode()) {
+        return;
+      }
+
+      const deltaX = e.clientX - startX;
+      const deltaY = e.clientY - startY;
+
+      // Rotation sensitivity: degrees per pixel drag
+      const bearingSensitivity = 0.45;
+      const pitchSensitivity = 0.25;
+
+      const newBearing = startBearing + (deltaX * bearingSensitivity);
+      const newPitch = Math.max(15, Math.min(75, startPitch - (deltaY * pitchSensitivity)));
+
+      mapInstance.jumpTo({
+        bearing: newBearing,
+        pitch: newPitch
+      });
+    });
+
+    const stop3DDrag = (e: PointerEvent) => {
+      if (!isDragging3D) return;
+
+      isDragging3D = false;
+      try {
+        canvas.releasePointerCapture(e.pointerId);
+      } catch (err) {
+        // Ignore fallback
+      }
+
+      // Re-enable standard dragPan
+      mapInstance.dragPan.enable();
+    };
+
+    canvas.addEventListener('pointerup', stop3DDrag);
+    canvas.addEventListener('pointercancel', stop3DDrag);
   }
 
   /**
@@ -374,6 +455,7 @@ export class MapService {
    */
   public set2DView(): void {
     if (!this.map) return;
+    this.map.dragPan.enable();
     this.map.easeTo({
       pitch: CAMERA_PRESETS.view2D.pitch,
       bearing: CAMERA_PRESETS.view2D.bearing,
