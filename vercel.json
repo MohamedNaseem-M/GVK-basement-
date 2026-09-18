@@ -1,16 +1,10 @@
 {
-  "version": 2,
-  "builds": [
+  "outputDirectory": "dist/plot-viz-app/browser",
+  "rewrites": [
     {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": { "distDir": "dist/plot-viz-app/browser" }
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
+
