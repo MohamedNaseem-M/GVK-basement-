@@ -18,7 +18,7 @@ export const INITIAL_MAP_CONFIG = {
   center: [PROJECT_LOCATION.lng, PROJECT_LOCATION.lat] as [number, number],
   zoom: 16.5,
   minZoom: 3,
-  maxZoom: 20,
+  maxZoom: 22,
   pitch: 55,
   bearing: -15,
   maxPitch: 75
@@ -52,7 +52,7 @@ export const BASEMAP_STYLES = {
           'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
         ],
         tileSize: 256,
-        maxzoom: 19,
+        maxzoom: 20,
         attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
       },
       'esri-boundaries': {
@@ -91,28 +91,28 @@ export const BASEMAP_STYLES = {
         type: 'raster',
         source: 'esri-satellite',
         minzoom: 0,
-        maxzoom: 19
+        maxzoom: 24
       },
       {
         id: 'esri-transportation-layer',
         type: 'raster',
         source: 'esri-transportation',
         minzoom: 0,
-        maxzoom: 19
+        maxzoom: 24
       },
       {
         id: 'esri-boundaries-layer',
         type: 'raster',
         source: 'esri-boundaries',
         minzoom: 0,
-        maxzoom: 19
+        maxzoom: 24
       },
       {
         id: 'carto-labels-layer',
         type: 'raster',
         source: 'carto-labels',
         minzoom: 0,
-        maxzoom: 19
+        maxzoom: 24
       }
     ]
   },
