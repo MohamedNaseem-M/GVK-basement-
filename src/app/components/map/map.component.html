@@ -235,9 +235,14 @@
         />
       </div>
 
-      <button type="button" class="calib-reset-btn" (click)="onResetCalibration()">
-        Reset Calibration
-      </button>
+      <div class="calib-btn-group">
+        <button type="button" class="calib-action-btn primary" (click)="onFitCadRoads()" title="Focus camera directly on CAD road extent">
+          🎯 FIT CAD ROADS
+        </button>
+        <button type="button" class="calib-reset-btn" (click)="onResetCalibration()">
+          Reset Baseline
+        </button>
+      </div>
     </div>
   </div>
 </div>

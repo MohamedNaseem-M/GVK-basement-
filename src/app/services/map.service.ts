@@ -719,39 +719,62 @@ export class MapService {
   }
 
   /**
+   * Fits map camera tightly to the transformed CAD road geometry extent
+   */
+  public fitCadRoads(): void {
+    if (!this.map || !this.isMapLoaded()) return;
+    const [minLng, minLat, maxLng, maxLat] = this.transformService.getTransformedBbox();
+
+    this.map.fitBounds(
+      [
+        [minLng, minLat],
+        [maxLng, maxLat]
+      ],
+      {
+        padding: 90,
+        maxZoom: 19.5,
+        duration: 1500,
+        essential: true
+      }
+    );
+  }
+
+  /**
    * Initializes CAD Road Extracted Visual Overlay on MapLibre map
    */
   public initCadRoadsOverlay(): void {
     if (!this.map || !this.isMapLoaded()) return;
 
     const geoJsonData = this.transformService.generateTransformedRoadsGeoJson();
+    const bboxGeoJson = this.transformService.generateBboxGeoJson();
 
+    // 1. Primary CAD Roads Source & Layers
     if (!this.map.getSource('cad-roads-source')) {
       this.map.addSource('cad-roads-source', {
         type: 'geojson',
         data: geoJsonData
       });
 
-      // 1. Polygon Fill Layer (Closed road areas)
+      // Polygon Fill Layer (Closed road areas)
       this.map.addLayer({
         id: 'cad-roads-fill',
         type: 'fill',
         source: 'cad-roads-source',
-        filter: ['==', '$type', 'Polygon'],
+        filter: ['==', ['geometry-type'], 'Polygon'],
         paint: {
           'fill-color': [
             'match',
             ['get', 'layer'],
-            'Road_9MAB', '#06b6d4',
-            'Road_9MBL', '#f59e0b',
-            'PROP_ROAD', '#10b981',
-            '#3b82f6'
+            'Road_9MAB', '#00ffff',
+            'Road_9MBL', '#ffaa00',
+            'PROP_ROAD', '#00ff66',
+            '#00ffff'
           ],
-          'fill-opacity': 0.3
+          'fill-opacity': 0.35
         }
       });
 
-      // 2. High-contrast Casing Outline (Black background stroke)
+      // High-contrast Casing Outline (Black background stroke)
       this.map.addLayer({
         id: 'cad-roads-casing',
         type: 'line',
@@ -761,19 +784,19 @@ export class MapService {
           'line-join': 'round'
         },
         paint: {
-          'line-color': '#0f172a',
+          'line-color': '#000000',
           'line-width': [
             'interpolate', ['linear'], ['zoom'],
-            13, 2,
-            16, 4.5,
-            18, 7.5,
-            20, 11
+            12, 5,
+            15, 9,
+            18, 14,
+            20, 18
           ],
-          'line-opacity': 0.7
+          'line-opacity': 1.0
         }
       });
 
-      // 3. Primary Road Lines (Color-coded by layer)
+      // Primary Road Lines (Color-coded by layer in Extreme High-Visibility Debug Colors)
       this.map.addLayer({
         id: 'cad-roads-line',
         type: 'line',
@@ -786,35 +809,92 @@ export class MapService {
           'line-color': [
             'match',
             ['get', 'layer'],
-            'Road_9MAB', '#22d3ee', // Bright Teal/Cyan
-            'Road_9MBL', '#fbbf24', // Warm Amber/Gold
-            'PROP_ROAD', '#34d399', // Vibrant Emerald Green
-            '#60a5fa'
+            'Road_9MAB', '#00ffff', // Electric Cyan
+            'Road_9MBL', '#ffaa00', // Neon Amber/Gold
+            'PROP_ROAD', '#00ff66', // Neon Emerald Green
+            '#00ffff'
           ],
           'line-width': [
             'interpolate', ['linear'], ['zoom'],
-            13, 1.2,
-            16, 3,
-            18, 5,
-            20, 8
+            12, 3,
+            15, 6,
+            18, 10,
+            20, 14
           ],
-          'line-opacity': 0.95
+          'line-opacity': 1.0
         }
       });
-    } else {
-      this.refreshCadRoadsOverlay();
+    }
+
+    // 2. Transformed CAD Bounding Box Layer ("CAD TRANSFORMED EXTENT")
+    if (!this.map.getSource('cad-bbox-source')) {
+      this.map.addSource('cad-bbox-source', {
+        type: 'geojson',
+        data: bboxGeoJson
+      });
+
+      this.map.addLayer({
+        id: 'cad-bbox-line',
+        type: 'line',
+        source: 'cad-bbox-source',
+        paint: {
+          'line-color': '#ff0077', // Bright Neon Pink / Magenta BBox
+          'line-width': 2.5,
+          'line-dasharray': [4, 3],
+          'line-opacity': 0.9
+        }
+      });
+    }
+
+    // 3. Project Anchor Point Marker Layer ("PROJECT ANCHOR")
+    if (!this.map.getSource('project-anchor-source')) {
+      this.map.addSource('project-anchor-source', {
+        type: 'geojson',
+        data: {
+          type: 'FeatureCollection',
+          features: [
+            {
+              type: 'Feature',
+              geometry: {
+                type: 'Point',
+                coordinates: [PROJECT_LOCATION.lng, PROJECT_LOCATION.lat]
+              },
+              properties: {
+                title: 'PROJECT ANCHOR'
+              }
+            }
+          ]
+        }
+      });
+
+      this.map.addLayer({
+        id: 'project-anchor-circle',
+        type: 'circle',
+        source: 'project-anchor-source',
+        paint: {
+          'circle-radius': 8,
+          'circle-color': '#ec4899',
+          'circle-stroke-width': 3,
+          'circle-stroke-color': '#ffffff'
+        }
+      });
     }
   }
 
   /**
-   * Dynamically re-evaluates CAD -> WGS84 transform and updates MapLibre source
+   * Dynamically re-evaluates CAD -> WGS84 transform and updates MapLibre sources
    */
   public refreshCadRoadsOverlay(): void {
     if (!this.map || !this.isMapLoaded()) return;
-    const source = this.map.getSource('cad-roads-source') as maplibregl.GeoJSONSource;
-    if (source) {
-      const updatedData = this.transformService.generateTransformedRoadsGeoJson();
-      source.setData(updatedData);
+
+    const roadsSource = this.map.getSource('cad-roads-source') as maplibregl.GeoJSONSource;
+    if (roadsSource) {
+      roadsSource.setData(this.transformService.generateTransformedRoadsGeoJson());
+    }
+
+    const bboxSource = this.map.getSource('cad-bbox-source') as maplibregl.GeoJSONSource;
+    if (bboxSource) {
+      bboxSource.setData(this.transformService.generateBboxGeoJson());
     }
   }
 

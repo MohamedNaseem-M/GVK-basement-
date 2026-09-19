@@ -69,4 +69,8 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     this.transformService.resetCalibration();
     this.mapService.refreshCadRoadsOverlay();
   }
+
+  public onFitCadRoads(): void {
+    this.mapService.fitCadRoads();
+  }
 }

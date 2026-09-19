@@ -126,6 +126,123 @@ export class CoordinateTransformService {
   }
 
   /**
+   * Calculates current transformed geographic bounding box [minLng, minLat, maxLng, maxLat]
+   */
+  public getTransformedBbox(): [number, number, number, number] {
+    const geoJson = this.generateTransformedRoadsGeoJson();
+    let minLng = Infinity, maxLng = -Infinity, minLat = Infinity, maxLat = -Infinity;
+
+    geoJson.features.forEach((f: any) => {
+      const geomType = f.geometry.type;
+      let coordsList: Array<[number, number]> = [];
+      if (geomType === 'LineString') {
+        coordsList = f.geometry.coordinates;
+      } else if (geomType === 'Polygon') {
+        coordsList = f.geometry.coordinates[0];
+      }
+
+      coordsList.forEach(([lng, lat]) => {
+        if (lng < minLng) minLng = lng;
+        if (lng > maxLng) maxLng = lng;
+        if (lat < minLat) minLat = lat;
+        if (lat > maxLat) maxLat = lat;
+      });
+    });
+
+    if (!isFinite(minLng)) return [76.901, 15.126, 76.902, 15.127];
+    return [minLng, minLat, maxLng, maxLat];
+  }
+
+  /**
+   * Generates a GeoJSON feature for rendering the CAD Transformed Extent bounding box
+   */
+  public generateBboxGeoJson(): any {
+    const [minLng, minLat, maxLng, maxLat] = this.getTransformedBbox();
+    return {
+      type: 'FeatureCollection',
+      features: [
+        {
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [minLng, minLat],
+                [maxLng, minLat],
+                [maxLng, maxLat],
+                [minLng, maxLat],
+                [minLng, minLat]
+              ]
+            ]
+          },
+          properties: {
+            name: 'CAD TRANSFORMED EXTENT'
+          }
+        }
+      ]
+    };
+  }
+
+  /**
+   * Comprehensive runtime diagnostic metrics for logging and UI inspection
+   */
+  public getDiagnostics(): any {
+    const geoJson = this.generateTransformedRoadsGeoJson();
+    let road9mab = 0, road9mbl = 0, propRoad = 0;
+    let totalCoords = 0;
+    let firstCoord: [number, number] | null = null;
+    let lastCoord: [number, number] | null = null;
+    let minLng = Infinity, maxLng = -Infinity, minLat = Infinity, maxLat = -Infinity;
+
+    geoJson.features.forEach((f: any) => {
+      const layerName = f.properties.layer;
+      if (layerName === 'Road_9MAB') road9mab++;
+      else if (layerName === 'Road_9MBL') road9mbl++;
+      else if (layerName === 'PROP_ROAD') propRoad++;
+
+      const coords: Array<[number, number]> = f.geometry.type === 'Polygon' ? f.geometry.coordinates[0] : f.geometry.coordinates;
+      coords.forEach(([lng, lat]) => {
+        if (!firstCoord) firstCoord = [lng, lat];
+        lastCoord = [lng, lat];
+        totalCoords++;
+        if (lng < minLng) minLng = lng;
+        if (lng > maxLng) maxLng = lng;
+        if (lat < minLat) minLat = lat;
+        if (lat > maxLat) maxLat = lat;
+      });
+    });
+
+    const centerLng = (minLng + maxLng) / 2;
+    const centerLat = (minLat + maxLat) / 2;
+    const anchorLng = this.anchorLng();
+    const anchorLat = this.anchorLat();
+
+    const baseLatRad = (anchorLat * Math.PI) / 180;
+    const mPerDegLat = 110600.0;
+    const mPerDegLng = 111320.0 * Math.cos(baseLatRad);
+
+    const dEast = (centerLng - anchorLng) * mPerDegLng;
+    const dNorth = (centerLat - anchorLat) * mPerDegLat;
+    const distMeters = Math.hypot(dEast, dNorth);
+
+    return {
+      features: { Road_9MAB: road9mab, Road_9MBL: road9mbl, PROP_ROAD: propRoad },
+      totalCoords,
+      firstCoord,
+      lastCoord,
+      minLng,
+      maxLng,
+      minLat,
+      maxLat,
+      centerLng,
+      centerLat,
+      anchorLng,
+      anchorLat,
+      distMeters: Number(distMeters.toFixed(2))
+    };
+  }
+
+  /**
    * Mathematically expands LWPOLYLINE vertices containing bulge arc parameters into continuous 2D CAD points
    */
   private expandPolylineBulges(vertices: DxfVertex[], closed: boolean): Array<[number, number]> {
