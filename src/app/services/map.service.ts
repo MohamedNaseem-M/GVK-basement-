@@ -1,4 +1,4 @@
-import { Injectable, signal, WritableSignal } from '@angular/core';
+import { Injectable, inject, signal, WritableSignal } from '@angular/core';
 import * as maplibregl from 'maplibre-gl';
 import {
   BASEMAP_STYLES,
@@ -6,11 +6,13 @@ import {
   INITIAL_MAP_CONFIG,
   PROJECT_LOCATION
 } from '../core/constants/map.constants';
+import { CoordinateTransformService } from './coordinate-transform.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class MapService {
+  private readonly transformService = inject(CoordinateTransformService);
   private map: maplibregl.Map | null = null;
   private projectMarker: maplibregl.Marker | null = null;
 
@@ -156,6 +158,7 @@ export class MapService {
 
         this.registerPoiIcons(mapInstance);
         this.addProjectMarker();
+        this.initCadRoadsOverlay();
         this.initDynamicPoiLayer();
         this.fetchDynamicPOIs();
 
@@ -712,6 +715,106 @@ export class MapService {
         type: 'geojson',
         data
       });
+    }
+  }
+
+  /**
+   * Initializes CAD Road Extracted Visual Overlay on MapLibre map
+   */
+  public initCadRoadsOverlay(): void {
+    if (!this.map || !this.isMapLoaded()) return;
+
+    const geoJsonData = this.transformService.generateTransformedRoadsGeoJson();
+
+    if (!this.map.getSource('cad-roads-source')) {
+      this.map.addSource('cad-roads-source', {
+        type: 'geojson',
+        data: geoJsonData
+      });
+
+      // 1. Polygon Fill Layer (Closed road areas)
+      this.map.addLayer({
+        id: 'cad-roads-fill',
+        type: 'fill',
+        source: 'cad-roads-source',
+        filter: ['==', '$type', 'Polygon'],
+        paint: {
+          'fill-color': [
+            'match',
+            ['get', 'layer'],
+            'Road_9MAB', '#06b6d4',
+            'Road_9MBL', '#f59e0b',
+            'PROP_ROAD', '#10b981',
+            '#3b82f6'
+          ],
+          'fill-opacity': 0.3
+        }
+      });
+
+      // 2. High-contrast Casing Outline (Black background stroke)
+      this.map.addLayer({
+        id: 'cad-roads-casing',
+        type: 'line',
+        source: 'cad-roads-source',
+        layout: {
+          'line-cap': 'round',
+          'line-join': 'round'
+        },
+        paint: {
+          'line-color': '#0f172a',
+          'line-width': [
+            'interpolate', ['linear'], ['zoom'],
+            13, 2,
+            16, 4.5,
+            18, 7.5,
+            20, 11
+          ],
+          'line-opacity': 0.7
+        }
+      });
+
+      // 3. Primary Road Lines (Color-coded by layer)
+      this.map.addLayer({
+        id: 'cad-roads-line',
+        type: 'line',
+        source: 'cad-roads-source',
+        layout: {
+          'line-cap': 'round',
+          'line-join': 'round'
+        },
+        paint: {
+          'line-color': [
+            'match',
+            ['get', 'layer'],
+            'Road_9MAB', '#22d3ee', // Bright Teal/Cyan
+            'Road_9MBL', '#fbbf24', // Warm Amber/Gold
+            'PROP_ROAD', '#34d399', // Vibrant Emerald Green
+            '#60a5fa'
+          ],
+          'line-width': [
+            'interpolate', ['linear'], ['zoom'],
+            13, 1.2,
+            16, 3,
+            18, 5,
+            20, 8
+          ],
+          'line-opacity': 0.95
+        }
+      });
+    } else {
+      this.refreshCadRoadsOverlay();
+    }
+  }
+
+  /**
+   * Dynamically re-evaluates CAD -> WGS84 transform and updates MapLibre source
+   */
+  public refreshCadRoadsOverlay(): void {
+    if (!this.map || !this.isMapLoaded()) return;
+    const source = this.map.getSource('cad-roads-source') as maplibregl.GeoJSONSource;
+    if (source) {
+      const updatedData = this.transformService.generateTransformedRoadsGeoJson();
+      source.setData(updatedData);
     }
   }
 

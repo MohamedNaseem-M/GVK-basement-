@@ -15,7 +15,7 @@ import rawDxfData from '../../assets/data/dxf-road-extraction.json';
   providedIn: 'root'
 })
 export class RoadDataService {
-  public readonly rawJsonData: DxfRoadExtractionJson = rawDxfData as DxfRoadExtractionJson;
+  public readonly rawJsonData: DxfRoadExtractionJson = (rawDxfData as unknown) as DxfRoadExtractionJson;
 
   public readonly roadSegments: WritableSignal<RoadSegment[]> = signal([]);
   public readonly roadLabels: WritableSignal<DxfLabel[]> = signal([]);

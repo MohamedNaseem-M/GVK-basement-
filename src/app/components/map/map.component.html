@@ -172,4 +172,72 @@
       </svg>
     </button>
   </div>
+
+  <!-- Developer CAD Visual Calibration Control Overlay -->
+  <div class="calibration-overlay" [class.collapsed]="!showCalibrationPanel">
+    <div class="calib-header" (click)="showCalibrationPanel = !showCalibrationPanel">
+      <div class="calib-title">
+        <span class="calib-dot"></span>
+        <span>CAD Road Overlay Calibration</span>
+      </div>
+      <button type="button" class="calib-toggle-btn" aria-label="Toggle Panel">
+        {{ showCalibrationPanel ? '▼' : '▲' }}
+      </button>
+    </div>
+
+    <div class="calib-body" *ngIf="showCalibrationPanel">
+      <div class="calib-row">
+        <span class="calib-label">CAD Anchor:</span>
+        <span class="calib-val">({{ transformService.anchorCadX() }}, {{ transformService.anchorCadY() }})</span>
+      </div>
+      <div class="calib-row">
+        <span class="calib-label">Map Anchor:</span>
+        <span class="calib-val">({{ transformService.anchorLng() }}, {{ transformService.anchorLat() }})</span>
+      </div>
+
+      <!-- Legend & Entities summary -->
+      <div class="calib-legend">
+        <div class="legend-item"><span class="color-chip chip-9mab"></span> Road_9MAB (42)</div>
+        <div class="legend-item"><span class="color-chip chip-9mbl"></span> Road_9MBL (1)</div>
+        <div class="legend-item"><span class="color-chip chip-prop"></span> PROP_ROAD (24)</div>
+      </div>
+
+      <!-- Controls -->
+      <div class="calib-control">
+        <div class="ctrl-header">
+          <span>Scale (m/CAD):</span>
+          <strong>{{ transformService.scale() | number:'1.2-3' }}</strong>
+        </div>
+        <input
+          type="range"
+          min="0.2"
+          max="3.0"
+          step="0.01"
+          [ngModel]="transformService.scale()"
+          (ngModelChange)="onScaleChange($event)"
+          class="calib-slider"
+        />
+      </div>
+
+      <div class="calib-control">
+        <div class="ctrl-header">
+          <span>Rotation (°):</span>
+          <strong>{{ transformService.rotationDeg() | number:'1.1-1' }}°</strong>
+        </div>
+        <input
+          type="range"
+          min="-180"
+          max="180"
+          step="0.5"
+          [ngModel]="transformService.rotationDeg()"
+          (ngModelChange)="onRotationChange($event)"
+          class="calib-slider"
+        />
+      </div>
+
+      <button type="button" class="calib-reset-btn" (click)="onResetCalibration()">
+        Reset Calibration
+      </button>
+    </div>
+  </div>
 </div>
