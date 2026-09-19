@@ -17,7 +17,7 @@ export const INITIAL_MAP_CONFIG = {
   // MapLibre GL format: [longitude, latitude]
   center: [PROJECT_LOCATION.lng, PROJECT_LOCATION.lat] as [number, number],
   zoom: 16.5,
-  minZoom: 3,
+  minZoom: 0,
   maxZoom: 22,
   pitch: 55,
   bearing: -15,
@@ -37,82 +37,41 @@ export const CAMERA_PRESETS = {
   }
 };
 
-
 /**
  * Satellite Basemap Style Specification
  * Primary: Esri World Imagery (No API key required, public satellite tile service)
+ * Labels: Esri Boundaries & Places + CARTO Voyager Labels
  */
 export const BASEMAP_STYLES = {
   satelliteStyle: {
     version: 8,
+    glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
     sources: {
-      'esri-satellite': {
+      'google-hybrid-satellite': {
         type: 'raster',
         tiles: [
-          'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+          'https://mt0.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
+          'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
+          'https://mt2.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
+          'https://mt3.google.com/vt/lyrs=y&x={x}&y={y}&z={z}'
         ],
         tileSize: 256,
-        maxzoom: 19,
-        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
-      },
-      'esri-boundaries': {
-        type: 'raster',
-        tiles: [
-          'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'
-        ],
-        tileSize: 256,
-        maxzoom: 19,
-        attribution: 'Labels &copy; Esri'
-      },
-      'carto-labels': {
-        type: 'raster',
-        tiles: [
-          'https://a.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}.png',
-          'https://b.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}.png',
-          'https://c.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}.png'
-        ],
-        tileSize: 256,
-        maxzoom: 19,
-        attribution: '&copy; CARTO &copy; OpenStreetMap'
-      },
-      'esri-transportation': {
-        type: 'raster',
-        tiles: [
-          'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}'
-        ],
-        tileSize: 256,
-        maxzoom: 19,
-        attribution: 'Roads &copy; Esri'
+        minzoom: 0,
+        maxzoom: 20,
+        attribution: 'Map & Imagery &copy; Google'
       }
     },
     layers: [
       {
-        id: 'esri-satellite-layer',
+        id: 'google-hybrid-satellite-layer',
         type: 'raster',
-        source: 'esri-satellite',
+        source: 'google-hybrid-satellite',
         minzoom: 0,
-        maxzoom: 24
-      },
-      {
-        id: 'esri-transportation-layer',
-        type: 'raster',
-        source: 'esri-transportation',
-        minzoom: 0,
-        maxzoom: 24
-      },
-      {
-        id: 'esri-boundaries-layer',
-        type: 'raster',
-        source: 'esri-boundaries',
-        minzoom: 0,
-        maxzoom: 24
-      },
-      {
-        id: 'carto-labels-layer',
-        type: 'raster',
-        source: 'carto-labels',
-        minzoom: 0,
-        maxzoom: 24
+        maxzoom: 24,
+        paint: {
+          'raster-fade-duration': 0,
+          'raster-resampling': 'linear'
+        }
       }
     ]
   },
@@ -127,6 +86,8 @@ export const BASEMAP_STYLES = {
           'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png'
         ],
         tileSize: 256,
+        minzoom: 0,
+        maxzoom: 19,
         attribution: '&copy; OpenStreetMap contributors'
       }
     },
@@ -136,9 +97,10 @@ export const BASEMAP_STYLES = {
         type: 'raster',
         source: 'osm-tiles',
         minzoom: 0,
-        maxzoom: 19
+        maxzoom: 24
       }
     ]
   }
 };
+
 

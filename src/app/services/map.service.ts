@@ -44,8 +44,11 @@ export class MapService {
       pitch: INITIAL_MAP_CONFIG.pitch,
       bearing: INITIAL_MAP_CONFIG.bearing,
       maxPitch: INITIAL_MAP_CONFIG.maxPitch,
-      fadeDuration: 100
-    });
+      fadeDuration: 0,
+      maxTileCacheSize: 2000,
+      maxTileCacheZoomLevels: 10,
+      cancelPendingTileRequestsWhileZooming: false
+    } as any);
 
     this.map = mapInstance;
 
@@ -71,6 +74,17 @@ export class MapService {
     // Track map load event and add project marker & POI layer
     mapInstance.on('load', () => {
       this.isMapLoaded.set(true);
+
+      // Deep tile pyramid retention tuning for continuous raster coverage
+      const style = (mapInstance as any).style;
+      if (style && style.sourceCaches && style.sourceCaches['google-hybrid-satellite']) {
+        const sc = style.sourceCaches['google-hybrid-satellite'];
+        if (sc) {
+          sc._maxFadingAncestorLevels = 10;
+        }
+      }
+
+      this.registerPoiIcons(mapInstance);
       this.addProjectMarker();
       this.initDynamicPoiLayer();
       this.fetchDynamicPOIs();
@@ -94,6 +108,67 @@ export class MapService {
     });
 
     return mapInstance;
+  }
+
+  /**
+   * Generates and registers sharp vector SVG category badge icons into MapLibre GL
+   */
+  private registerPoiIcons(mapInstance: maplibregl.Map): void {
+    const categories = [
+      { name: 'hospital', color: '#ef4444', icon: 'M19 10.5h-5.5V5c0-.8-.7-1.5-1.5-1.5s-1.5.7-1.5 1.5v5.5H5c-.8 0-1.5.7-1.5 1.5s.7 1.5 1.5 1.5h5.5V19c0 .8.7 1.5 1.5 1.5s1.5-.7 1.5-1.5v-5.5H19c.8 0 1.5-.7 1.5-1.5s-.7-1.5-1.5-1.5z' },
+      { name: 'hotel', color: '#8b5cf6', icon: 'M7 13c1.66 0 3-1.34 3-3S8.66 7 7 7s-3 1.34-3 3 1.34 3 3 3zm12-6h-8v7H3V5H1v15h2v-3h18v3h2v-9c0-2.21-1.79-4-4-4z' },
+      { name: 'fuel', color: '#f59e0b', icon: 'M19.77 7.23l.01-.01-3.72-3.72L15 4.56l2.11 2.11c-.94.36-1.61 1.26-1.61 2.33 0 1.38 1.12 2.5 2.5 2.5.36 0 .69-.08 1-.21v7.21c0 .55-.45 1-1 1s-1-.45-1-1V14c0-1.1-.9-2-2-2h-1V5c0-1.1-.9-2-2-2H6c-1.1 0-2 .9-2 2v16h10v-7.5h1.5v5.5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V9c0-.69-.28-1.32-.73-1.77z' },
+      { name: 'restaurant', color: '#f97316', icon: 'M11 9H9V2H7v7H5V2H3v7c0 2.12 1.66 3.84 3.75 3.97V22h2.5v-9.03C11.34 12.84 13 11.12 13 9V2h-2v7zm5-3v6h2.5v10H21V2c-2.76 0-5 2.24-5 4z' },
+      { name: 'bank', color: '#10b981', icon: 'M4 10v7h3v-7H4zm6 0v7h3v-7h-3zM2 22h19v-3H2v3zm14-12v7h3v-7h-3zm-4.5-9L2 6v2h19V6l-9.5-5z' },
+      { name: 'shop', color: '#06b6d4', icon: 'M19 6h-2c0-2.21-1.79-4-4-4S9 3.79 9 6H7c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-6-2c1.1 0 2 .9 2 2h-4c0-1.1.9-2 2-2zm0 10c-2.21 0-4-1.79-4-4h2c0 1.1.9 2 2 2s2-.9 2-2h2c0 2.21-1.79 4-4 4z' },
+      { name: 'school', color: '#6366f1', icon: 'M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z' },
+      { name: 'place_of_worship', color: '#a855f7', icon: 'M12 2L9 6h2v3H8v2h3v11h2V11h3V9h-3V6h2L12 2z' },
+      { name: 'park', color: '#22c55e', icon: 'M14 6l-3.8-5L6.4 6H8l-4 6h3.6L4 18h16l-3.6-6H20l-4-6h1.6L14 6zM12 18v4h-2v-4h2z' },
+      { name: 'landmark', color: '#64748b', icon: 'M12 2L9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2z' }
+    ];
+
+    categories.forEach(cat => {
+      const size = 48;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      // Drop shadow
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+      ctx.shadowBlur = 6;
+      ctx.shadowOffsetY = 3;
+
+      // Background circle badge
+      ctx.fillStyle = cat.color;
+      ctx.beginPath();
+      ctx.arc(size / 2, size / 2, 18, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Reset shadow for stroke outline
+      ctx.shadowColor = 'transparent';
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      // Draw vector SVG icon in center
+      const p = new Path2D(cat.icon);
+      ctx.save();
+      ctx.translate(12, 12);
+      ctx.fillStyle = '#ffffff';
+      ctx.fill(p);
+      ctx.restore();
+
+      const imageData = ctx.getImageData(0, 0, size, size);
+      if (!mapInstance.hasImage(`poi-${cat.name}`)) {
+        mapInstance.addImage(`poi-${cat.name}`, {
+          width: size,
+          height: size,
+          data: imageData.data
+        }, { pixelRatio: 2 });
+      }
+    });
   }
 
   /**
@@ -195,7 +270,7 @@ export class MapService {
   }
 
   /**
-   * Initializes dynamic vector POI source and styling layers in MapLibre GL
+   * Initializes dynamic vector POI source and custom SVG icon symbol layers in MapLibre GL
    */
   private initDynamicPoiLayer(): void {
     if (!this.map) return;
@@ -210,25 +285,28 @@ export class MapService {
       });
     }
 
-    // Colored circle background markers for real-world POIs
+    // Layer 1: Colored Circle Badge Layer for POIs (visible zoom >= 8)
     if (!this.map.getLayer('osm-pois-circles')) {
       this.map.addLayer({
         id: 'osm-pois-circles',
         type: 'circle',
         source: 'osm-pois-source',
+        minzoom: 8,
         paint: {
-          'circle-radius': ['interpolate', ['linear'], ['zoom'], 12, 4, 16, 7, 19, 10],
+          'circle-radius': ['interpolate', ['linear'], ['zoom'], 8, 4, 12, 7, 16, 12, 19, 15],
           'circle-color': [
             'match',
             ['get', 'category'],
-            'fuel', '#f59e0b',
-            'hotel', '#3b82f6',
             'hospital', '#ef4444',
+            'hotel', '#8b5cf6',
+            'fuel', '#f59e0b',
+            'restaurant', '#f97316',
             'bank', '#10b981',
-            'restaurant', '#ec4899',
-            'school', '#8b5cf6',
+            'shop', '#06b6d4',
+            'school', '#6366f1',
             'place_of_worship', '#a855f7',
-            '#06b6d4'
+            'park', '#22c55e',
+            '#64748b'
           ],
           'circle-stroke-width': 2,
           'circle-stroke-color': '#ffffff',
@@ -237,40 +315,58 @@ export class MapService {
       });
     }
 
-    // Text labels for POI names
-    if (!this.map.getLayer('osm-pois-labels')) {
+    // Layer 2: Vector Icon & Text Label Symbol Layer for real-world POIs (visible zoom >= 8)
+    if (!this.map.getLayer('osm-pois-icons')) {
       this.map.addLayer({
-        id: 'osm-pois-labels',
+        id: 'osm-pois-icons',
         type: 'symbol',
         source: 'osm-pois-source',
-        minzoom: 13,
+        minzoom: 8,
         layout: {
+          'icon-image': [
+            'match',
+            ['get', 'category'],
+            'hospital', 'poi-hospital',
+            'hotel', 'poi-hotel',
+            'fuel', 'poi-fuel',
+            'restaurant', 'poi-restaurant',
+            'bank', 'poi-bank',
+            'shop', 'poi-shop',
+            'school', 'poi-school',
+            'place_of_worship', 'poi-place_of_worship',
+            'park', 'poi-park',
+            'poi-landmark'
+          ],
+          'icon-size': ['interpolate', ['linear'], ['zoom'], 8, 0.45, 12, 0.65, 16, 0.95, 19, 1.1],
+          'icon-allow-overlap': false,
+          'icon-ignore-placement': false,
           'text-field': ['get', 'name'],
           'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
-          'text-size': ['interpolate', ['linear'], ['zoom'], 13, 10, 16, 12, 19, 14],
-          'text-offset': [0, 1.2],
+          'text-size': ['interpolate', ['linear'], ['zoom'], 10, 10, 14, 11, 16, 13],
+          'text-offset': [0, 1.4],
           'text-anchor': 'top',
+          'text-optional': true,
           'text-max-width': 10
         },
         paint: {
           'text-color': '#ffffff',
           'text-halo-color': '#0f172a',
-          'text-halo-width': 2
+          'text-halo-width': 2.5
         }
       });
     }
 
     // Cursor pointer on hover over POIs
-    this.map.on('mouseenter', 'osm-pois-circles', () => {
-      if (this.map) this.map.getCanvas().style.cursor = 'pointer';
-    });
+    const setPointer = () => { if (this.map) this.map.getCanvas().style.cursor = 'pointer'; };
+    const resetPointer = () => { if (this.map) this.map.getCanvas().style.cursor = ''; };
 
-    this.map.on('mouseleave', 'osm-pois-circles', () => {
-      if (this.map) this.map.getCanvas().style.cursor = '';
-    });
+    this.map.on('mouseenter', 'osm-pois-circles', setPointer);
+    this.map.on('mouseleave', 'osm-pois-circles', resetPointer);
+    this.map.on('mouseenter', 'osm-pois-icons', setPointer);
+    this.map.on('mouseleave', 'osm-pois-icons', resetPointer);
 
     // Interactive popup on POI click/tap
-    this.map.on('click', 'osm-pois-circles', (e: any) => {
+    const onPoiClick = (e: any) => {
       if (!this.map || !e.features || !e.features[0]) return;
 
       const feature = e.features[0];
@@ -281,7 +377,7 @@ export class MapService {
         this.poiPopup.remove();
       }
 
-      const categoryTitle = (props.category || 'POI').toUpperCase();
+      const categoryTitle = (props.category || 'POI').replace('_', ' ').toUpperCase();
       const popupHtml = `
         <div class="marker-popup-content">
           <span class="popup-tag">${categoryTitle}</span>
@@ -297,7 +393,10 @@ export class MapService {
         .setLngLat(coords)
         .setHTML(popupHtml)
         .addTo(this.map);
-    });
+    };
+
+    this.map.on('click', 'osm-pois-circles', onPoiClick);
+    this.map.on('click', 'osm-pois-icons', onPoiClick);
   }
 
   /**
@@ -321,8 +420,7 @@ export class MapService {
     const bounds = this.map.getBounds();
     const zoom = this.map.getZoom();
 
-    // Limit query to zoom level >= 12 to avoid massive payload
-    if (zoom < 12) return;
+    if (zoom < 8) return;
 
     const south = bounds.getSouth().toFixed(5);
     const west = bounds.getWest().toFixed(5);
@@ -335,7 +433,9 @@ export class MapService {
       node["shop"](${south},${west},${north},${east});
       node["highway"="fuel"](${south},${west},${north},${east});
       node["place"](${south},${west},${north},${east});
-    );out body 80;`;
+      node["leisure"="park"](${south},${west},${north},${east});
+      node["historic"](${south},${west},${north},${east});
+    );out body 100;`;
 
     const endpoints = [
       'https://overpass-api.de/api/interpreter',
@@ -345,21 +445,14 @@ export class MapService {
 
     for (const url of endpoints) {
       try {
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'User-Agent': 'GVTBasementApp/1.0'
-          },
-          body: 'data=' + encodeURIComponent(query)
-        });
+        const response = await fetch(url + '?data=' + encodeURIComponent(query));
 
         if (!response.ok) continue;
 
         const data = await response.json();
         if (!data || !data.elements) continue;
 
-        const features = data.elements
+        const dynamicFeatures = data.elements
           .filter((e: any) => e.tags && (e.tags.name || e.tags['name:en']))
           .map((e: any) => {
             const name = e.tags.name || e.tags['name:en'];
@@ -368,17 +461,18 @@ export class MapService {
             const shop = e.tags.shop;
             const highway = e.tags.highway;
             const place = e.tags.place;
+            const leisure = e.tags.leisure;
 
             let category = 'landmark';
             if (highway === 'fuel' || amenity === 'fuel') category = 'fuel';
-            else if (tourism === 'hotel' || amenity === 'hotel') category = 'hotel';
-            else if (amenity === 'hospital' || amenity === 'clinic') category = 'hospital';
+            else if (tourism === 'hotel' || amenity === 'hotel' || tourism === 'resort' || tourism === 'guest_house') category = 'hotel';
+            else if (amenity === 'hospital' || amenity === 'clinic' || amenity === 'doctors') category = 'hospital';
             else if (amenity === 'bank' || amenity === 'atm') category = 'bank';
-            else if (amenity === 'restaurant' || amenity === 'cafe' || amenity === 'fast_food') category = 'restaurant';
-            else if (amenity === 'school' || amenity === 'college' || amenity === 'university') category = 'school';
+            else if (amenity === 'restaurant' || amenity === 'cafe' || amenity === 'fast_food' || amenity === 'food_court') category = 'restaurant';
+            else if (amenity === 'school' || amenity === 'college' || amenity === 'university' || amenity === 'kindergarten') category = 'school';
             else if (amenity === 'place_of_worship' || e.tags.religion) category = 'place_of_worship';
+            else if (leisure === 'park' || leisure === 'garden') category = 'park';
             else if (shop) category = 'shop';
-            else if (place) category = 'landmark';
 
             return {
               type: 'Feature',
@@ -390,14 +484,14 @@ export class MapService {
                 id: e.id,
                 name,
                 category,
-                type: amenity || tourism || shop || place || 'poi'
+                type: amenity || tourism || shop || place || leisure || 'poi'
               }
             };
           });
 
         const geojson = {
           type: 'FeatureCollection',
-          features
+          features: dynamicFeatures
         };
 
         const source = this.map.getSource('osm-pois-source') as maplibregl.GeoJSONSource;
@@ -405,10 +499,9 @@ export class MapService {
           source.setData(geojson as any);
         }
 
-        // Successfully loaded from endpoint, break loop
         break;
       } catch (err) {
-        // Try next endpoint silently
+        // Try next mirror
       }
     }
   }
