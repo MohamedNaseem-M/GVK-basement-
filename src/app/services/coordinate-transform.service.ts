@@ -126,6 +126,42 @@ export class CoordinateTransformService {
   }
 
   /**
+   * Generates WGS84 GeoJSON Point features for road width callout text labels
+   */
+  public generateTransformedLabelsGeoJson(): any {
+    const rawLabels = this.roadDataService.roadLabels();
+    const features: any[] = [];
+
+    rawLabels.forEach(lbl => {
+      if (!lbl.position) return;
+      const [lng, lat] = this.cadToWgs84(lbl.position[0], lbl.position[1]);
+      let formattedText = lbl.text.trim();
+
+      if (/^\d+(\.\d+)?M$/i.test(formattedText)) {
+        formattedText = `${formattedText.toUpperCase()} ROAD`;
+      }
+
+      features.push({
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: [lng, lat]
+        },
+        properties: {
+          text: formattedText,
+          originalText: lbl.text,
+          rotationDeg: lbl.rotationDeg || 0
+        }
+      });
+    });
+
+    return {
+      type: 'FeatureCollection',
+      features
+    };
+  }
+
+  /**
    * Calculates current transformed geographic bounding box [minLng, minLat, maxLng, maxLat]
    */
   public getTransformedBbox(): [number, number, number, number] {

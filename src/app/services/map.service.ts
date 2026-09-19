@@ -740,13 +740,14 @@ export class MapService {
   }
 
   /**
-   * Initializes CAD Road Extracted Visual Overlay on MapLibre map
+   * Initializes CAD Road Extracted Visual Overlay on MapLibre map with Master Plan Visual Style
    */
   public initCadRoadsOverlay(): void {
     if (!this.map || !this.isMapLoaded()) return;
 
     const geoJsonData = this.transformService.generateTransformedRoadsGeoJson();
     const bboxGeoJson = this.transformService.generateBboxGeoJson();
+    const labelsGeoJson = this.transformService.generateTransformedLabelsGeoJson();
 
     // 1. Primary CAD Roads Source & Layers
     if (!this.map.getSource('cad-roads-source')) {
@@ -755,26 +756,19 @@ export class MapService {
         data: geoJsonData
       });
 
-      // Polygon Fill Layer (Closed road areas)
+      // Master Plan Road Corridor Surface (Filled Dark Slate Gray Asphalt)
       this.map.addLayer({
         id: 'cad-roads-fill',
         type: 'fill',
         source: 'cad-roads-source',
         filter: ['==', ['geometry-type'], 'Polygon'],
         paint: {
-          'fill-color': [
-            'match',
-            ['get', 'layer'],
-            'Road_9MAB', '#00ffff',
-            'Road_9MBL', '#ffaa00',
-            'PROP_ROAD', '#00ff66',
-            '#00ffff'
-          ],
-          'fill-opacity': 0.35
+          'fill-color': '#1e293b',
+          'fill-opacity': 0.92
         }
       });
 
-      // High-contrast Casing Outline (Black background stroke)
+      // Master Plan Road Curb Border Outlines
       this.map.addLayer({
         id: 'cad-roads-casing',
         type: 'line',
@@ -784,23 +778,24 @@ export class MapService {
           'line-join': 'round'
         },
         paint: {
-          'line-color': '#000000',
+          'line-color': '#64748b',
           'line-width': [
             'interpolate', ['linear'], ['zoom'],
-            12, 5,
-            15, 9,
-            18, 14,
-            20, 18
+            12, 1.5,
+            15, 3,
+            18, 5,
+            20, 7
           ],
-          'line-opacity': 1.0
+          'line-opacity': 0.9
         }
       });
 
-      // Primary Road Lines (Color-coded by layer in Extreme High-Visibility Debug Colors)
+      // Open Centerline & Auxiliary Lines
       this.map.addLayer({
         id: 'cad-roads-line',
         type: 'line',
         source: 'cad-roads-source',
+        filter: ['==', ['geometry-type'], 'LineString'],
         layout: {
           'line-cap': 'round',
           'line-join': 'round'
@@ -809,24 +804,54 @@ export class MapService {
           'line-color': [
             'match',
             ['get', 'layer'],
-            'Road_9MAB', '#00ffff', // Electric Cyan
-            'Road_9MBL', '#ffaa00', // Neon Amber/Gold
-            'PROP_ROAD', '#00ff66', // Neon Emerald Green
-            '#00ffff'
+            'Road_9MAB', '#38bdf8',
+            'Road_9MBL', '#fbbf24',
+            'PROP_ROAD', '#34d399',
+            '#38bdf8'
           ],
           'line-width': [
             'interpolate', ['linear'], ['zoom'],
-            12, 3,
-            15, 6,
-            18, 10,
-            20, 14
+            12, 2,
+            15, 4,
+            18, 6,
+            20, 9
           ],
-          'line-opacity': 1.0
+          'line-opacity': 0.85
         }
       });
     }
 
-    // 2. Transformed CAD Bounding Box Layer ("CAD TRANSFORMED EXTENT")
+    // 2. Road Width Callout Text Labels (9M, 12M, 7.5M, 18M)
+    if (!this.map.getSource('cad-road-labels-source')) {
+      this.map.addSource('cad-road-labels-source', {
+        type: 'geojson',
+        data: labelsGeoJson
+      });
+
+      this.map.addLayer({
+        id: 'cad-road-labels',
+        type: 'symbol',
+        source: 'cad-road-labels-source',
+        layout: {
+          'text-field': ['get', 'text'],
+          'text-size': [
+            'interpolate', ['linear'], ['zoom'],
+            14, 9,
+            16, 11,
+            18, 13
+          ],
+          'text-anchor': 'center',
+          'text-allow-overlap': false
+        },
+        paint: {
+          'text-color': '#f8fafc',
+          'text-halo-color': '#0f172a',
+          'text-halo-width': 2.0
+        }
+      });
+    }
+
+    // 3. Transformed CAD Bounding Box Layer ("CAD TRANSFORMED EXTENT")
     if (!this.map.getSource('cad-bbox-source')) {
       this.map.addSource('cad-bbox-source', {
         type: 'geojson',
@@ -838,7 +863,7 @@ export class MapService {
         type: 'line',
         source: 'cad-bbox-source',
         paint: {
-          'line-color': '#ff0077', // Bright Neon Pink / Magenta BBox
+          'line-color': '#ff0077',
           'line-width': 2.5,
           'line-dasharray': [4, 3],
           'line-opacity': 0.9
@@ -846,7 +871,7 @@ export class MapService {
       });
     }
 
-    // 3. Project Anchor Point Marker Layer ("PROJECT ANCHOR")
+    // 4. Project Anchor Point Marker Layer ("PROJECT ANCHOR")
     if (!this.map.getSource('project-anchor-source')) {
       this.map.addSource('project-anchor-source', {
         type: 'geojson',
@@ -890,6 +915,11 @@ export class MapService {
     const roadsSource = this.map.getSource('cad-roads-source') as maplibregl.GeoJSONSource;
     if (roadsSource) {
       roadsSource.setData(this.transformService.generateTransformedRoadsGeoJson());
+    }
+
+    const labelsSource = this.map.getSource('cad-road-labels-source') as maplibregl.GeoJSONSource;
+    if (labelsSource) {
+      labelsSource.setData(this.transformService.generateTransformedLabelsGeoJson());
     }
 
     const bboxSource = this.map.getSource('cad-bbox-source') as maplibregl.GeoJSONSource;
