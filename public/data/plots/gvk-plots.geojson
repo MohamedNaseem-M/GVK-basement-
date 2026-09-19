@@ -5839,11 +5839,11 @@
             ],
             [
               76.9004486,
-              15.1280197
+              15.1278357
             ],
             [
               76.9003258,
-              15.1280197
+              15.1278357
             ],
             [
               76.9003258,
@@ -5855,18 +5855,18 @@
       "properties": {
         "plotNumber": 115,
         "block": "Block C",
-        "areaSqM": 382.14,
-        "areaSqFt": 4113.3,
+        "areaSqM": 113.52,
+        "areaSqFt": 1221.9,
         "frontageM": 13.2,
-        "depthM": 28.95,
-        "dimensions": "13.2m x 28.95m",
+        "depthM": 8.6,
+        "dimensions": "13.2m x 8.6m",
         "centroidCad": [
           26711.47,
-          1665.8
+          1655.63
         ],
         "centroidWgs84": [
           76.9003872,
-          15.1278888
+          15.1277968
         ],
         "sourceHandle": "16133",
         "geometrySource": "CAD-DXF-EXTRACT-NUMBER-LAYER",
@@ -10472,11 +10472,11 @@
           [
             [
               76.9014815,
-              15.1252958
+              15.1253902
             ],
             [
               76.9015923,
-              15.1252958
+              15.1253717
             ],
             [
               76.9015923,
@@ -10488,7 +10488,7 @@
             ],
             [
               76.9014815,
-              15.1252958
+              15.1253902
             ]
           ]
         ]
@@ -10496,18 +10496,18 @@
       "properties": {
         "plotNumber": 206,
         "block": "Block G",
-        "areaSqM": 241.21,
-        "areaSqFt": 2596.4,
+        "areaSqM": 129.17,
+        "areaSqFt": 1390.4,
         "frontageM": 11.9,
-        "depthM": 20.27,
-        "dimensions": "11.9m x 20.27m",
+        "depthM": 10.86,
+        "dimensions": "11.9m x 10.86m",
         "centroidCad": [
-          26835.02,
-          1389.15
+          26835.21,
+          1393.85
         ],
         "centroidWgs84": [
-          76.9015369,
-          15.1253874
+          76.9015387,
+          15.1254299
         ],
         "sourceHandle": "15EF6",
         "geometrySource": "CAD-DXF-EXTRACT-NUMBER-LAYER",
@@ -10523,11 +10523,11 @@
           [
             [
               76.9012861,
-              15.1252958
+              15.125423
             ],
             [
               76.9013978,
-              15.1252958
+              15.1254043
             ],
             [
               76.9013978,
@@ -10539,7 +10539,7 @@
             ],
             [
               76.9012861,
-              15.1252958
+              15.125423
             ]
           ]
         ]
@@ -10547,18 +10547,18 @@
       "properties": {
         "plotNumber": 207,
         "block": "Block F",
-        "areaSqM": 243.24,
-        "areaSqFt": 2618.2,
+        "areaSqM": 86.82,
+        "areaSqFt": 934.5,
         "frontageM": 12,
-        "depthM": 20.27,
-        "dimensions": "12m x 20.27m",
+        "depthM": 7.24,
+        "dimensions": "12m x 7.24m",
         "centroidCad": [
-          26814.07,
-          1389.15
+          26814.36,
+          1395.65
         ],
         "centroidWgs84": [
-          76.901342,
-          15.1253874
+          76.9013447,
+          15.1254462
         ],
         "sourceHandle": "15F02",
         "geometrySource": "CAD-DXF-EXTRACT-NUMBER-LAYER",
@@ -11696,11 +11696,11 @@
           [
             [
               76.9011745,
-              15.1253375
+              15.1254418
             ],
             [
               76.9012861,
-              15.1253375
+              15.125423
             ],
             [
               76.9012861,
@@ -11712,7 +11712,7 @@
             ],
             [
               76.9011745,
-              15.1253375
+              15.1254418
             ]
           ]
         ]
@@ -11720,18 +11720,18 @@
       "properties": {
         "plotNumber": 230,
         "block": "Block F",
-        "areaSqM": 187.92,
-        "areaSqFt": 2022.8,
+        "areaSqM": 61.92,
+        "areaSqFt": 666.5,
         "frontageM": 12,
-        "depthM": 15.66,
-        "dimensions": "12m x 15.66m",
+        "depthM": 5.16,
+        "dimensions": "12m x 5.16m",
         "centroidCad": [
-          26802.07,
-          1391.46
+          26802.47,
+          1396.68
         ],
         "centroidWgs84": [
-          76.9012303,
-          15.1254083
+          76.901234,
+          15.1254555
         ],
         "sourceHandle": "15F0E",
         "geometrySource": "CAD-DXF-EXTRACT-NUMBER-LAYER",
@@ -11747,11 +11747,11 @@
           [
             [
               76.900979,
-              15.1253375
+              15.1254747
             ],
             [
               76.9010907,
-              15.1253375
+              15.1254558
             ],
             [
               76.9010907,
@@ -11763,7 +11763,7 @@
             ],
             [
               76.900979,
-              15.1253375
+              15.1254747
             ]
           ]
         ]
@@ -11771,18 +11771,18 @@
       "properties": {
         "plotNumber": 231,
         "block": "Block E",
-        "areaSqM": 295.92,
-        "areaSqFt": 3185.3,
+        "areaSqM": 126.36,
+        "areaSqFt": 1360.1,
         "frontageM": 12,
-        "depthM": 24.66,
-        "dimensions": "12m x 24.66m",
+        "depthM": 10.53,
+        "dimensions": "12m x 10.53m",
         "centroidCad": [
-          26781.07,
-          1395.96
+          26781.27,
+          1403.01
         ],
         "centroidWgs84": [
-          76.9010349,
-          15.125449
+          76.9010367,
+          15.1255127
         ],
         "sourceHandle": "15F18",
         "geometrySource": "CAD-DXF-EXTRACT-NUMBER-LAYER",
@@ -12818,11 +12818,11 @@
           [
             [
               76.9008674,
-              15.1253791
+              15.1254934
             ],
             [
               76.900979,
-              15.1253791
+              15.1254747
             ],
             [
               76.900979,
@@ -12834,7 +12834,7 @@
             ],
             [
               76.9008674,
-              15.1253791
+              15.1254934
             ]
           ]
         ]
@@ -12842,18 +12842,18 @@
       "properties": {
         "plotNumber": 252,
         "block": "Block E",
-        "areaSqM": 240.72,
-        "areaSqFt": 2591.1,
+        "areaSqM": 101.46,
+        "areaSqFt": 1092.1,
         "frontageM": 12,
-        "depthM": 20.06,
-        "dimensions": "12m x 20.06m",
+        "depthM": 8.45,
+        "dimensions": "12m x 8.45m",
         "centroidCad": [
-          26769.07,
-          1398.26
+          26769.31,
+          1404.04
         ],
         "centroidWgs84": [
-          76.9009232,
-          15.1254698
+          76.9009254,
+          15.125522
         ],
         "sourceHandle": "15F23",
         "geometrySource": "CAD-DXF-EXTRACT-NUMBER-LAYER",
@@ -12869,11 +12869,11 @@
           [
             [
               76.900672,
-              15.1253791
+              15.1255262
             ],
             [
               76.9007836,
-              15.1253791
+              15.1255075
             ],
             [
               76.9007836,
@@ -12885,7 +12885,7 @@
             ],
             [
               76.900672,
-              15.1253791
+              15.1255262
             ]
           ]
         ]
@@ -12893,18 +12893,18 @@
       "properties": {
         "plotNumber": 253,
         "block": "Block D",
-        "areaSqM": 348.72,
-        "areaSqFt": 3753.6,
+        "areaSqM": 165.9,
+        "areaSqFt": 1785.7,
         "frontageM": 12,
-        "depthM": 29.06,
-        "dimensions": "12m x 29.06m",
+        "depthM": 13.82,
+        "dimensions": "12m x 13.82m",
         "centroidCad": [
-          26748.07,
-          1402.76
+          26748.22,
+          1410.36
         ],
         "centroidWgs84": [
-          76.9007278,
-          15.1255105
+          76.9007292,
+          15.1255792
         ],
         "sourceHandle": "15F2E",
         "geometrySource": "CAD-DXF-EXTRACT-NUMBER-LAYER",
@@ -13838,11 +13838,11 @@
           [
             [
               76.9005603,
-              15.1254208
+              15.125545
             ],
             [
               76.900672,
-              15.1254208
+              15.1255262
             ],
             [
               76.900672,
@@ -13854,7 +13854,7 @@
             ],
             [
               76.9005603,
-              15.1254208
+              15.125545
             ]
           ]
         ]
@@ -13862,18 +13862,18 @@
       "properties": {
         "plotNumber": 272,
         "block": "Block D",
-        "areaSqM": 293.4,
-        "areaSqFt": 3158.1,
+        "areaSqM": 141,
+        "areaSqFt": 1517.7,
         "frontageM": 12,
-        "depthM": 24.45,
-        "dimensions": "12m x 24.45m",
+        "depthM": 11.75,
+        "dimensions": "12m x 11.75m",
         "centroidCad": [
-          26736.07,
-          1405.07
+          26736.25,
+          1411.4
         ],
         "centroidWgs84": [
-          76.9006161,
-          15.1255313
+          76.9006178,
+          15.1255886
         ],
         "sourceHandle": "15F39",
         "geometrySource": "CAD-DXF-EXTRACT-NUMBER-LAYER",
@@ -13889,11 +13889,11 @@
           [
             [
               76.9003258,
-              15.1254208
+              15.1255843
             ],
             [
               76.9004486,
-              15.1254208
+              15.1255637
             ],
             [
               76.9004486,
@@ -13905,7 +13905,7 @@
             ],
             [
               76.9003258,
-              15.1254208
+              15.1255843
             ]
           ]
         ]
@@ -13913,18 +13913,18 @@
       "properties": {
         "plotNumber": 273,
         "block": "Block C",
-        "areaSqM": 322.74,
-        "areaSqFt": 3473.9,
+        "areaSqM": 99,
+        "areaSqFt": 1065.6,
         "frontageM": 13.2,
-        "depthM": 24.45,
-        "dimensions": "13.2m x 24.45m",
+        "depthM": 7.5,
+        "dimensions": "13.2m x 7.5m",
         "centroidCad": [
-          26711.47,
-          1405.07
+          26711.8,
+          1413.51
         ],
         "centroidWgs84": [
-          76.9003872,
-          15.1255313
+          76.9003903,
+          15.1256077
         ],
         "sourceHandle": "15F54",
         "geometrySource": "CAD-DXF-EXTRACT-NUMBER-LAYER",
@@ -14858,11 +14858,11 @@
           [
             [
               76.9002141,
-              15.1254662
+              15.1256031
             ],
             [
               76.9003258,
-              15.1254662
+              15.1255843
             ],
             [
               76.9003258,
@@ -14874,7 +14874,7 @@
             ],
             [
               76.9002141,
-              15.1254662
+              15.1256031
             ]
           ]
         ]
@@ -14882,18 +14882,18 @@
       "properties": {
         "plotNumber": 292,
         "block": "Block C",
-        "areaSqM": 233.04,
-        "areaSqFt": 2508.4,
+        "areaSqM": 63.84,
+        "areaSqFt": 687.2,
         "frontageM": 12,
-        "depthM": 19.42,
-        "dimensions": "12m x 19.42m",
+        "depthM": 5.32,
+        "dimensions": "12m x 5.32m",
         "centroidCad": [
-          26698.87,
-          1407.58
+          26699.26,
+          1414.6
         ],
         "centroidWgs84": [
-          76.90027,
-          15.125554
+          76.9002736,
+          15.1256175
         ],
         "sourceHandle": "15F55",
         "geometrySource": "CAD-DXF-EXTRACT-NUMBER-LAYER",
@@ -14909,11 +14909,11 @@
           [
             [
               76.9000187,
-              15.1254662
+              15.125636
             ],
             [
               76.9001304,
-              15.1254662
+              15.1256172
             ],
             [
               76.9001304,
@@ -14925,7 +14925,7 @@
             ],
             [
               76.9000187,
-              15.1254662
+              15.125636
             ]
           ]
         ]
@@ -14933,18 +14933,18 @@
       "properties": {
         "plotNumber": 293,
         "block": "Block B",
-        "areaSqM": 341.04,
-        "areaSqFt": 3670.9,
+        "areaSqM": 128.28,
+        "areaSqFt": 1380.8,
         "frontageM": 12,
-        "depthM": 28.42,
-        "dimensions": "12m x 28.42m",
+        "depthM": 10.69,
+        "dimensions": "12m x 10.69m",
         "centroidCad": [
-          26677.87,
-          1412.08
+          26678.06,
+          1420.93
         ],
         "centroidWgs84": [
-          76.9000745,
-          15.1255947
+          76.9000763,
+          15.1256747
         ],
         "sourceHandle": "17A19",
         "geometrySource": "CAD-DXF-EXTRACT-NUMBER-LAYER",
@@ -15776,11 +15776,11 @@
           [
             [
               76.899907,
-              15.1255079
+              15.1256547
             ],
             [
               76.9000187,
-              15.1255079
+              15.125636
             ],
             [
               76.9000187,
@@ -15792,7 +15792,7 @@
             ],
             [
               76.899907,
-              15.1255079
+              15.1256547
             ]
           ]
         ]
@@ -15800,18 +15800,18 @@
       "properties": {
         "plotNumber": 310,
         "block": "Block B",
-        "areaSqM": 285.72,
-        "areaSqFt": 3075.5,
+        "areaSqM": 103.38,
+        "areaSqFt": 1112.8,
         "frontageM": 12,
-        "depthM": 23.81,
-        "dimensions": "12m x 23.81m",
+        "depthM": 8.61,
+        "dimensions": "12m x 8.61m",
         "centroidCad": [
-          26665.87,
-          1414.38
+          26666.11,
+          1421.96
         ],
         "centroidWgs84": [
-          76.8999629,
-          15.1256155
+          76.8999651,
+          15.1256841
         ],
         "sourceHandle": "15F5F",
         "geometrySource": "CAD-DXF-EXTRACT-NUMBER-LAYER",
@@ -16184,11 +16184,11 @@
           [
             [
               76.8997116,
-              15.1255079
+              15.1256875
             ],
             [
               76.8998233,
-              15.1255079
+              15.1256688
             ],
             [
               76.8998233,
@@ -16200,7 +16200,7 @@
             ],
             [
               76.8997116,
-              15.1255079
+              15.1256875
             ]
           ]
         ]
@@ -16208,18 +16208,18 @@
       "properties": {
         "plotNumber": 318,
         "block": "Block A",
-        "areaSqM": 393.72,
-        "areaSqFt": 4238,
+        "areaSqM": 167.82,
+        "areaSqFt": 1806.4,
         "frontageM": 12,
-        "depthM": 32.81,
-        "dimensions": "12m x 32.81m",
+        "depthM": 13.99,
+        "dimensions": "12m x 13.99m",
         "centroidCad": [
-          26644.87,
-          1418.88
+          26645.02,
+          1428.28
         ],
         "centroidWgs84": [
-          76.8997675,
-          15.1256562
+          76.8997689,
+          15.1257412
         ],
         "sourceHandle": "15F67",
         "geometrySource": "CAD-DXF-EXTRACT-NUMBER-LAYER",

@@ -68,7 +68,7 @@ export class MasterPlanPlotService {
    * Computes geographic bounding box [minLng, minLat, maxLng, maxLat] of all 318 plots
    */
   public getWgs84Bbox(): [number, number, number, number] {
-    return [76.8997116, 15.1252958, 76.9015923, 15.1281160];
+    return [76.8997116, 15.1253717, 76.9015923, 15.1281160];
   }
 
   /**

@@ -41,6 +41,60 @@ export interface ReconstructedCadPlot {
   labelPosition: [number, number];
 }
 
+// Southern boundary line termination: y = m * x + c
+// Mathematically determined by the 6 collinear termination points of the block dividing lines
+export const SOUTH_BOUNDARY_SLOPE = -0.172856;
+export const SOUTH_BOUNDARY_INTERCEPT = 6027.0307;
+
+export function getSouthBoundaryY(x: number): number {
+  return Number((SOUTH_BOUNDARY_SLOPE * x + SOUTH_BOUNDARY_INTERCEPT).toFixed(2));
+}
+
+// Authoritative block top terminations from CAD geometry:
+// Blocks A, B, C (cols 1-5): terminate at y = 1659.93
+// Blocks D, E, F (cols 6-11): terminate at y = 1690.93
+// Block G (col 12): terminates at y = 1501.29
+export const TOP_BOUNDS: { [col: number]: number } = {
+  1: 1659.93,
+  2: 1659.93,
+  3: 1659.93,
+  4: 1659.93,
+  5: 1659.93,
+  6: 1690.93,
+  7: 1690.93,
+  8: 1690.93,
+  9: 1690.93,
+  10: 1690.93,
+  11: 1690.93,
+  12: 1501.29
+};
+
+export const BOTTOM_PLOTS = new Set([318, 310, 293, 292, 273, 272, 253, 252, 231, 230, 207, 206]);
+
+function computePolygonGeometry(pts: Array<[number, number]>): { areaSqM: number; centroid: [number, number] } {
+  const n = pts.length - 1;
+  let area = 0;
+  let cx = 0;
+  let cy = 0;
+  for (let i = 0; i < n; i++) {
+    const x0 = pts[i][0];
+    const y0 = pts[i][1];
+    const x1 = pts[i + 1][0];
+    const y1 = pts[i + 1][1];
+    const cross = x0 * y1 - x1 * y0;
+    area += cross;
+    cx += (x0 + x1) * cross;
+    cy += (y0 + y1) * cross;
+  }
+  const signedArea = area / 2;
+  const centroidX = Number((cx / (6 * (signedArea === 0 ? 1 : signedArea))).toFixed(2));
+  const centroidY = Number((cy / (6 * (signedArea === 0 ? 1 : signedArea))).toFixed(2));
+  return {
+    areaSqM: Number(Math.abs(signedArea).toFixed(2)),
+    centroid: [centroidX, centroidY]
+  };
+}
+
 export class PlotGeometryProcessor {
   /**
    * Mathematically reconstructs all 318 plots from raw CAD extraction data.
@@ -80,44 +134,21 @@ export class PlotGeometryProcessor {
       }
     });
 
-    // 2. Extract vertical line extents
-    const vLineMap: { [x: number]: Array<{ minY: number; maxY: number }> } = {};
-    lines.forEach(l => {
-      if (Math.abs(l.start[0] - l.end[0]) < 0.01) {
-        const x = Number(l.start[0].toFixed(2));
-        const minY = Number(Math.min(l.start[1], l.end[1]).toFixed(2));
-        const maxY = Number(Math.max(l.start[1], l.end[1]).toFixed(2));
-        if (!vLineMap[x]) vLineMap[x] = [];
-        vLineMap[x].push({ minY, maxY });
-      }
-    });
-
-    // 3. Reconstruct plots column by column
+    // 2. Reconstruct plots column by column
     const plots: ReconstructedCadPlot[] = [];
 
     MASTERPLAN_COLUMNS.forEach(cd => {
-      // Collect all horizontal lines crossing or adjacent to this column strip
+      const topLimit = TOP_BOUNDS[cd.col];
       const colHL = allHLines
         .filter(hl => hl.minX <= cd.leftX + 1.0 && hl.maxX >= cd.rightX - 1.0)
-        .map(hl => Number(hl.y.toFixed(2)));
+        .map(hl => Number(hl.y.toFixed(2)))
+        .filter(y => y <= topLimit + 0.05);
 
       const uniqueHL = Array.from(new Set(colHL)).sort((a, b) => a - b);
-
-      const leftV = vLineMap[cd.leftX] || [];
-      const rightV = vLineMap[cd.rightX] || [];
-      const allV = [...leftV, ...rightV];
-      const vMinYs = allV.map(v => v.minY);
-      const vMaxYs = allV.map(v => v.maxY);
-
-      if (vMinYs.length > 0) uniqueHL.push(Math.min(...vMinYs));
-      if (vMaxYs.length > 0) uniqueHL.push(Math.max(...vMaxYs));
-
-      if (cd.col === 1) {
-        const v56 = vLineMap[26650.87];
-        if (v56) v56.forEach(v => { uniqueHL.push(v.minY); uniqueHL.push(v.maxY); });
+      if (!uniqueHL.includes(topLimit)) {
+        uniqueHL.push(topLimit);
+        uniqueHL.sort((a, b) => a - b);
       }
-
-      const allDivisionYs = Array.from(new Set(uniqueHL.map(y => Number(y.toFixed(2))))).sort((a, b) => a - b);
 
       // Find labels belonging to this column
       const colPlots = labels.filter(l => {
@@ -135,36 +166,59 @@ export class PlotGeometryProcessor {
       }).sort((a, b) => a.position[1] - b.position[1]);
 
       colPlots.forEach(lbl => {
+        const pnum = lbl.plotNumber;
         const py = lbl.position[1];
-        const below = allDivisionYs.filter(y => y <= py + 0.05);
-        const above = allDivisionYs.filter(y => y >= py - 0.05);
-        const yBottom = below.length > 0 ? below[below.length - 1] : py - 4.5;
-        const yTop = above.length > 0 ? above[0] : py + 4.5;
+        let cadPolygon: Array<[number, number]> = [];
+        let depth = 0;
+        let areaSqM = 0;
+        let centroid: [number, number] = [0, 0];
 
-        // Form closed 4-corner polygon
-        const cadPolygon: Array<[number, number]> = [
-          [cd.leftX, yBottom],
-          [cd.rightX, yBottom],
-          [cd.rightX, yTop],
-          [cd.leftX, yTop],
-          [cd.leftX, yBottom]
-        ];
+        if (BOTTOM_PLOTS.has(pnum)) {
+          // Southern boundary trapezoidal termination matching CAD linework
+          const above = uniqueHL.filter(y => y >= py - 0.05);
+          const yTop = above.length > 0 ? above[0] : py + 4.5;
+          const yBottomLeft = getSouthBoundaryY(cd.leftX);
+          const yBottomRight = getSouthBoundaryY(cd.rightX);
 
-        const frontage = cd.width;
-        const depth = Number((yTop - yBottom).toFixed(2));
-        const areaSqM = Number((frontage * depth).toFixed(2));
+          cadPolygon = [
+            [cd.leftX, yBottomLeft],
+            [cd.rightX, yBottomRight],
+            [cd.rightX, yTop],
+            [cd.leftX, yTop],
+            [cd.leftX, yBottomLeft]
+          ];
+          depth = Number((yTop - (yBottomLeft + yBottomRight) / 2).toFixed(2));
+          const geom = computePolygonGeometry(cadPolygon);
+          areaSqM = geom.areaSqM;
+          centroid = geom.centroid;
+        } else {
+          // Standard rectangular plot
+          const below = uniqueHL.filter(y => y <= py + 0.05);
+          const above = uniqueHL.filter(y => y >= py - 0.05);
+          const yBottom = below.length > 0 ? below[below.length - 1] : py - 4.5;
+          const yTop = above.length > 0 ? above[0] : py + 4.5;
+
+          cadPolygon = [
+            [cd.leftX, yBottom],
+            [cd.rightX, yBottom],
+            [cd.rightX, yTop],
+            [cd.leftX, yTop],
+            [cd.leftX, yBottom]
+          ];
+          depth = Number((yTop - yBottom).toFixed(2));
+          const geom = computePolygonGeometry(cadPolygon);
+          areaSqM = geom.areaSqM;
+          centroid = geom.centroid;
+        }
+
         const areaSqFt = Number((areaSqM * 10.7639).toFixed(1));
-        const centroid: [number, number] = [
-          Number(((cd.leftX + cd.rightX) / 2).toFixed(2)),
-          Number(((yBottom + yTop) / 2).toFixed(2))
-        ];
 
         plots.push({
-          plotNumber: lbl.plotNumber,
+          plotNumber: pnum,
           handle: lbl.handle,
           col: cd.col,
           block: cd.block,
-          frontageM: frontage,
+          frontageM: cd.width,
           depthM: depth,
           areaSqM,
           areaSqFt,
