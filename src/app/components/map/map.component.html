@@ -1,4 +1,101 @@
 <div class="map-wrapper">
+  <!-- Professional Real-Estate Loading & Buffering Overlay -->
+  <div
+    *ngIf="mapService.isOverlayVisible()"
+    class="loading-overlay"
+    [class.fade-out]="mapService.isMapReady()"
+    [class.has-error]="mapService.hasMapError()"
+  >
+    <!-- Background Glassmorphic Blur & Ambient Glow Orbs -->
+    <div class="overlay-backdrop">
+      <div class="glow-orb orb-1"></div>
+      <div class="glow-orb orb-2"></div>
+      <div class="grid-pattern"></div>
+    </div>
+
+    <!-- Main Card Container -->
+    <div class="overlay-card" *ngIf="!mapService.hasMapError()">
+      <!-- Brand & Status Chip -->
+      <div class="project-badge">
+        <span class="radar-pulse"></span>
+        <span class="badge-text">PREMIUM GATED COMMUNITY</span>
+      </div>
+
+      <!-- Main Project Header -->
+      <div class="header-section">
+        <h1 class="project-title">GVK Enclave</h1>
+        <div class="project-location">
+          <svg class="icon-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+            <circle cx="12" cy="10" r="3"></circle>
+          </svg>
+          <span>Talur Road · Ballari</span>
+        </div>
+      </div>
+
+      <!-- Project Description -->
+      <p class="project-description">
+        "GVK Enclave" is a premium gated plotting community designed with precision and elegance. Featuring a grand illuminated entrance, wide internal roads, landscaped open spaces, and well-planned residential plots, the project offers the perfect environment to build your dream home amidst scenic hill views and lush greenery.
+      </p>
+
+      <!-- Key Project Statistics Grid -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-value">318</span>
+          <span class="stat-label">Total Plots</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-value text-sm">Cowl Bazaar</span>
+          <span class="stat-label">Location · Ballari</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-value text-sm">93 - 294.53 m²</span>
+          <span class="stat-label">Plot Sizes</span>
+        </div>
+      </div>
+
+      <!-- Real-Estate Radar / Engine Buffering Status -->
+      <div class="buffering-status">
+        <div class="scanner-indicator">
+          <div class="radar-ring ring-1"></div>
+          <div class="radar-ring ring-2"></div>
+          <div class="radar-center"></div>
+        </div>
+        <div class="progress-container">
+          <div class="progress-labels">
+            <span class="status-text">{{ mapService.loadingMessage() }}</span>
+            <span class="percentage-text">{{ mapService.loadingProgress() }}%</span>
+          </div>
+          <div class="progress-bar-track">
+            <div
+              class="progress-bar-fill"
+              [style.width.%]="mapService.loadingProgress()"
+            ></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Error Fallback Card -->
+    <div class="overlay-card error-card" *ngIf="mapService.hasMapError()">
+      <div class="error-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+      </div>
+      <h2>Unable to Load Map</h2>
+      <p>The satellite map engine could not be initialized. Please check your internet connection and try again.</p>
+      <button type="button" class="retry-btn" (click)="onRetryMap()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
+        </svg>
+        <span>Retry Initialization</span>
+      </button>
+    </div>
+  </div>
+
   <!-- Map Canvas Container -->
   <div #mapContainer class="map-container"></div>
 

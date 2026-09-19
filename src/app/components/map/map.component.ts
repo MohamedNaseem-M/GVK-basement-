@@ -41,4 +41,10 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   public onZoomOut(): void {
     this.mapService.zoomOut();
   }
+
+  public onRetryMap(): void {
+    if (this.mapContainer?.nativeElement) {
+      this.mapService.initializeMap(this.mapContainer.nativeElement);
+    }
+  }
 }

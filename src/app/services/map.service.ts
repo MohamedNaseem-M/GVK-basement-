@@ -16,6 +16,11 @@ export class MapService {
 
   // Reactive state signals for public consumption
   public readonly isMapLoaded: WritableSignal<boolean> = signal(false);
+  public readonly isMapReady: WritableSignal<boolean> = signal(false);
+  public readonly isOverlayVisible: WritableSignal<boolean> = signal(true);
+  public readonly hasMapError: WritableSignal<boolean> = signal(false);
+  public readonly loadingMessage: WritableSignal<string> = signal('Initializing Satellite Engine...');
+  public readonly loadingProgress: WritableSignal<number> = signal(20);
   public readonly currentZoom: WritableSignal<number> = signal(INITIAL_MAP_CONFIG.zoom);
   public readonly currentCenter: WritableSignal<{ lat: number; lng: number }> = signal(PROJECT_LOCATION);
   public readonly is3DMode: WritableSignal<boolean> = signal(true);
@@ -24,71 +29,141 @@ export class MapService {
 
   private poiPopup: maplibregl.Popup | null = null;
   private poiFetchTimeout: any = null;
+  private safetyTimeout: any = null;
 
   /**
    * Initializes MapLibre GL map instance inside target DOM element with 3D satellite basemap
    */
   public initializeMap(container: HTMLElement): maplibregl.Map {
+    if (this.safetyTimeout) {
+      clearTimeout(this.safetyTimeout);
+      this.safetyTimeout = null;
+    }
+
     if (this.map) {
       this.map.remove();
       this.map = null;
     }
 
-    const mapInstance = new maplibregl.Map({
-      container,
-      style: BASEMAP_STYLES.satelliteStyle as maplibregl.StyleSpecification,
-      center: INITIAL_MAP_CONFIG.center,
-      zoom: INITIAL_MAP_CONFIG.zoom,
-      minZoom: INITIAL_MAP_CONFIG.minZoom,
-      maxZoom: INITIAL_MAP_CONFIG.maxZoom,
-      pitch: INITIAL_MAP_CONFIG.pitch,
-      bearing: INITIAL_MAP_CONFIG.bearing,
-      maxPitch: INITIAL_MAP_CONFIG.maxPitch,
-      fadeDuration: 0,
-      maxTileCacheSize: 2000,
-      maxTileCacheZoomLevels: 10,
-      cancelPendingTileRequestsWhileZooming: false
-    } as any);
+    // Reset loading state for fresh page load / retry
+    this.isMapLoaded.set(false);
+    this.isMapReady.set(false);
+    this.isOverlayVisible.set(true);
+    this.hasMapError.set(false);
+    this.loadingMessage.set('Initializing Satellite Engine...');
+    this.loadingProgress.set(25);
 
-    this.map = mapInstance;
+    try {
+      const mapInstance = new maplibregl.Map({
+        container,
+        style: BASEMAP_STYLES.satelliteStyle as maplibregl.StyleSpecification,
+        center: INITIAL_MAP_CONFIG.center,
+        zoom: INITIAL_MAP_CONFIG.zoom,
+        minZoom: INITIAL_MAP_CONFIG.minZoom,
+        maxZoom: INITIAL_MAP_CONFIG.maxZoom,
+        pitch: INITIAL_MAP_CONFIG.pitch,
+        bearing: INITIAL_MAP_CONFIG.bearing,
+        maxPitch: INITIAL_MAP_CONFIG.maxPitch,
+        fadeDuration: 0,
+        maxTileCacheSize: 2000,
+        maxTileCacheZoomLevels: 10,
+        cancelPendingTileRequestsWhileZooming: false
+      } as any);
 
-    // Enable native MapLibre rotation & pitch controls
-    mapInstance.dragRotate.enable();
-    mapInstance.touchZoomRotate.enable();
-    mapInstance.touchZoomRotate.enableRotation();
-    mapInstance.touchPitch.enable();
+      this.map = mapInstance;
 
-    // Setup custom 3D drag-to-bearing pointer interaction (3D mode only)
-    this.setup3DRotationDragHandlers(mapInstance);
-
-    // Add standard touch-friendly navigation controls (bottom-right compass/pitch)
-    mapInstance.addControl(
-      new maplibregl.NavigationControl({
-        showCompass: true,
-        showZoom: false, // Custom touch controls provided in component UI
-        visualizePitch: true
-      }),
-      'bottom-right'
-    );
-
-    // Track map load event and add project marker & POI layer
-    mapInstance.on('load', () => {
-      this.isMapLoaded.set(true);
-
-      // Deep tile pyramid retention tuning for continuous raster coverage
-      const style = (mapInstance as any).style;
-      if (style && style.sourceCaches && style.sourceCaches['google-hybrid-satellite']) {
-        const sc = style.sourceCaches['google-hybrid-satellite'];
-        if (sc) {
-          sc._maxFadingAncestorLevels = 10;
+      // Track catastrophic map initialization errors
+      mapInstance.on('error', (e: any) => {
+        // Only trigger error fallback if style/tile loading completely failed before map load
+        if (!this.isMapLoaded() && e?.error?.message && !e.error.message.includes('404')) {
+          this.hasMapError.set(true);
         }
-      }
+      });
 
-      this.registerPoiIcons(mapInstance);
-      this.addProjectMarker();
-      this.initDynamicPoiLayer();
-      this.fetchDynamicPOIs();
-    });
+      // Enable native MapLibre rotation & pitch controls
+      mapInstance.dragRotate.enable();
+      mapInstance.touchZoomRotate.enable();
+      mapInstance.touchZoomRotate.enableRotation();
+      mapInstance.touchPitch.enable();
+
+      // Setup custom 3D drag-to-bearing pointer interaction (3D mode only)
+      this.setup3DRotationDragHandlers(mapInstance);
+
+      // Add standard touch-friendly navigation controls (bottom-right compass/pitch)
+      mapInstance.addControl(
+        new maplibregl.NavigationControl({
+          showCompass: true,
+          showZoom: false, // Custom touch controls provided in component UI
+          visualizePitch: true
+        }),
+        'bottom-right'
+      );
+
+      let isReadyTriggered = false;
+      const markMapAsReady = () => {
+        if (isReadyTriggered) return;
+        isReadyTriggered = true;
+
+        if (this.safetyTimeout) {
+          clearTimeout(this.safetyTimeout);
+          this.safetyTimeout = null;
+        }
+
+        this.loadingMessage.set('Satellite Map Ready');
+        this.loadingProgress.set(100);
+
+        // Signal map ready for smooth CSS fade-out transition
+        this.isMapReady.set(true);
+
+        // Hide overlay DOM container after 650ms fade-out completes
+        setTimeout(() => {
+          this.isOverlayVisible.set(false);
+        }, 650);
+      };
+
+      // Safety timeout guard: Ensures overlay never hangs forever if 1 low-priority background tile stalls
+      this.safetyTimeout = setTimeout(() => {
+        if (this.isMapLoaded()) {
+          markMapAsReady();
+        }
+      }, 7000);
+
+      // Listen for actual map idle & source load events
+      mapInstance.once('idle', () => {
+        markMapAsReady();
+      });
+
+      mapInstance.on('sourcedata', (e: any) => {
+        if (e.sourceId === 'google-hybrid-satellite' && e.isSourceLoaded && this.isMapLoaded()) {
+          markMapAsReady();
+        }
+      });
+
+      // Track map load event and add project marker & POI layer
+      mapInstance.on('load', () => {
+        this.isMapLoaded.set(true);
+        this.loadingMessage.set('Loading Viewport Tiles & Road Overlays...');
+        this.loadingProgress.set(70);
+
+        // Deep tile pyramid retention tuning for continuous raster coverage
+        const style = (mapInstance as any).style;
+        if (style && style.sourceCaches && style.sourceCaches['google-hybrid-satellite']) {
+          const sc = style.sourceCaches['google-hybrid-satellite'];
+          if (sc) {
+            sc._maxFadingAncestorLevels = 10;
+          }
+        }
+
+        this.registerPoiIcons(mapInstance);
+        this.addProjectMarker();
+        this.initDynamicPoiLayer();
+        this.fetchDynamicPOIs();
+
+        // If map tiles are already rendered at load time, mark ready
+        if (mapInstance.areTilesLoaded()) {
+          markMapAsReady();
+        }
+      });
 
     // Track real-time map camera movements & fetch POIs on viewport move
     mapInstance.on('move', () => {
@@ -108,6 +183,11 @@ export class MapService {
     });
 
     return mapInstance;
+    } catch (err) {
+      this.hasMapError.set(true);
+      this.loadingMessage.set('Failed to initialize satellite map engine.');
+      return null as any;
+    }
   }
 
   /**
@@ -636,6 +716,10 @@ export class MapService {
   }
 
   public destroyMap(): void {
+    if (this.safetyTimeout) {
+      clearTimeout(this.safetyTimeout);
+      this.safetyTimeout = null;
+    }
     if (this.projectMarker) {
       this.projectMarker.remove();
       this.projectMarker = null;
