@@ -41,7 +41,7 @@ export class MasterPlanPlotService {
    */
   private async syncAuthoritativeGeoJson(): Promise<void> {
     try {
-      const response = await fetch('data/plots/gvk-plots.geojson');
+      const response = await fetch('data/plots/gvk-plots.geojson?v=2');
       if (response.ok) {
         const json = await response.json();
         if (json && json.features && json.features.length === 318) {
