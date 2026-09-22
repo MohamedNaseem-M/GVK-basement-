@@ -7,12 +7,18 @@ import {
   PROJECT_LOCATION
 } from '../core/constants/map.constants';
 import { CoordinateTransformService } from './coordinate-transform.service';
+import { MasterPlanDataService } from './masterplan-data.service';
+import { MasterPlanRoadService } from '../masterplan/services/masterplan-road.service';
+import { MasterPlanPlotService } from '../masterplan/services/masterplan-plot.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class MapService {
   private readonly transformService = inject(CoordinateTransformService);
+  private readonly masterPlanService = inject(MasterPlanDataService);
+  public readonly masterPlanRoadService = inject(MasterPlanRoadService);
+  public readonly masterPlanPlotService = inject(MasterPlanPlotService);
   private map: maplibregl.Map | null = null;
   private projectMarker: maplibregl.Marker | null = null;
 
@@ -56,6 +62,10 @@ export class MapService {
     this.loadingProgress.set(25);
 
     try {
+      if ((maplibregl as any).config) {
+        (maplibregl as any).config.WORKER_URL = 'https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-gl-worker.mjs';
+      }
+
       const mapInstance = new maplibregl.Map({
         container,
         style: BASEMAP_STYLES.satelliteStyle as maplibregl.StyleSpecification,
@@ -73,6 +83,8 @@ export class MapService {
       } as any);
 
       this.map = mapInstance;
+      (window as any)._map = mapInstance;
+      (window as any)._mapService = this;
 
       // Track catastrophic map initialization errors
       mapInstance.on('error', (e: any) => {
@@ -158,9 +170,13 @@ export class MapService {
 
         this.registerPoiIcons(mapInstance);
         this.addProjectMarker();
-        this.initCadRoadsOverlay();
+        this.masterPlanRoadService.attachRoadLayersToMap(mapInstance);
+        this.masterPlanPlotService.attachPlotLayersToMap(mapInstance);
         this.initDynamicPoiLayer();
         this.fetchDynamicPOIs();
+
+        // Automatically frame the master plan 318-plot layout over real project site
+        this.fitMasterPlanPlots();
 
         // If map tiles are already rendered at load time, mark ready
         if (mapInstance.areTilesLoaded()) {
@@ -187,6 +203,7 @@ export class MapService {
 
     return mapInstance;
     } catch (err) {
+      console.error('CRITICAL MAP INIT ERROR:', err);
       this.hasMapError.set(true);
       this.loadingMessage.set('Failed to initialize satellite map engine.');
       return null as any;
@@ -666,7 +683,7 @@ export class MapService {
   public set3DView(): void {
     if (!this.map) return;
     this.map.easeTo({
-      center: [PROJECT_LOCATION.lng, PROJECT_LOCATION.lat],
+      center: [76.9008446, 15.1266426],
       pitch: CAMERA_PRESETS.view3D.pitch,
       bearing: CAMERA_PRESETS.view3D.bearing,
       zoom: CAMERA_PRESETS.view3D.zoom,
@@ -675,7 +692,7 @@ export class MapService {
   }
 
   /**
-   * Smoothly flies camera back to exact project location
+   * Smoothly flies camera back to exact master plan layout location
    */
   public flyToProjectLocation(): void {
     if (!this.map) return;
@@ -684,7 +701,7 @@ export class MapService {
     const targetZoom = this.is3DMode() ? CAMERA_PRESETS.view3D.zoom : CAMERA_PRESETS.view2D.zoom;
 
     this.map.flyTo({
-      center: [PROJECT_LOCATION.lng, PROJECT_LOCATION.lat],
+      center: [76.9008446, 15.1266426],
       zoom: targetZoom,
       pitch: targetPitch,
       bearing: targetBearing,
@@ -719,11 +736,11 @@ export class MapService {
   }
 
   /**
-   * Fits map camera tightly to the transformed CAD road geometry extent
+   * Fits map camera tightly to the Master Plan road network extent
    */
-  public fitCadRoads(): void {
+  public fitMasterPlanRoads(): void {
     if (!this.map || !this.isMapLoaded()) return;
-    const [minLng, minLat, maxLng, maxLat] = this.transformService.getTransformedBbox();
+    const [minLng, minLat, maxLng, maxLat] = this.masterPlanRoadService.getWgs84Bbox();
 
     this.map.fitBounds(
       [
@@ -733,200 +750,94 @@ export class MapService {
       {
         padding: 90,
         maxZoom: 19.5,
-        duration: 1500,
+        duration: 1400,
         essential: true
       }
     );
   }
 
   /**
-   * Initializes CAD Road Extracted Visual Overlay on MapLibre map with Master Plan Visual Style
+   * Alias for backward compatibility if invoked from external caller
    */
-  public initCadRoadsOverlay(): void {
+  public fitCadRoads(): void {
+    this.fitMasterPlanRoads();
+  }
+
+  public fitMasterPlanPlots(): void {
     if (!this.map || !this.isMapLoaded()) return;
-
-    const geoJsonData = this.transformService.generateTransformedRoadsGeoJson();
-    const bboxGeoJson = this.transformService.generateBboxGeoJson();
-    const labelsGeoJson = this.transformService.generateTransformedLabelsGeoJson();
-
-    // 1. Primary CAD Roads Source & Layers
-    if (!this.map.getSource('cad-roads-source')) {
-      this.map.addSource('cad-roads-source', {
-        type: 'geojson',
-        data: geoJsonData
-      });
-
-      // Master Plan Road Corridor Surface (Filled Dark Slate Gray Asphalt)
-      this.map.addLayer({
-        id: 'cad-roads-fill',
-        type: 'fill',
-        source: 'cad-roads-source',
-        filter: ['==', ['geometry-type'], 'Polygon'],
-        paint: {
-          'fill-color': '#1e293b',
-          'fill-opacity': 0.92
-        }
-      });
-
-      // Master Plan Road Curb Border Outlines
-      this.map.addLayer({
-        id: 'cad-roads-casing',
-        type: 'line',
-        source: 'cad-roads-source',
-        layout: {
-          'line-cap': 'round',
-          'line-join': 'round'
-        },
-        paint: {
-          'line-color': '#64748b',
-          'line-width': [
-            'interpolate', ['linear'], ['zoom'],
-            12, 1.5,
-            15, 3,
-            18, 5,
-            20, 7
-          ],
-          'line-opacity': 0.9
-        }
-      });
-
-      // Open Centerline & Auxiliary Lines
-      this.map.addLayer({
-        id: 'cad-roads-line',
-        type: 'line',
-        source: 'cad-roads-source',
-        filter: ['==', ['geometry-type'], 'LineString'],
-        layout: {
-          'line-cap': 'round',
-          'line-join': 'round'
-        },
-        paint: {
-          'line-color': [
-            'match',
-            ['get', 'layer'],
-            'Road_9MAB', '#38bdf8',
-            'Road_9MBL', '#fbbf24',
-            'PROP_ROAD', '#34d399',
-            '#38bdf8'
-          ],
-          'line-width': [
-            'interpolate', ['linear'], ['zoom'],
-            12, 2,
-            15, 4,
-            18, 6,
-            20, 9
-          ],
-          'line-opacity': 0.85
-        }
-      });
-    }
-
-    // 2. Road Width Callout Text Labels (9M, 12M, 7.5M, 18M)
-    if (!this.map.getSource('cad-road-labels-source')) {
-      this.map.addSource('cad-road-labels-source', {
-        type: 'geojson',
-        data: labelsGeoJson
-      });
-
-      this.map.addLayer({
-        id: 'cad-road-labels',
-        type: 'symbol',
-        source: 'cad-road-labels-source',
-        layout: {
-          'text-field': ['get', 'text'],
-          'text-size': [
-            'interpolate', ['linear'], ['zoom'],
-            14, 9,
-            16, 11,
-            18, 13
-          ],
-          'text-anchor': 'center',
-          'text-allow-overlap': false
-        },
-        paint: {
-          'text-color': '#f8fafc',
-          'text-halo-color': '#0f172a',
-          'text-halo-width': 2.0
-        }
-      });
-    }
-
-    // 3. Transformed CAD Bounding Box Layer ("CAD TRANSFORMED EXTENT")
-    if (!this.map.getSource('cad-bbox-source')) {
-      this.map.addSource('cad-bbox-source', {
-        type: 'geojson',
-        data: bboxGeoJson
-      });
-
-      this.map.addLayer({
-        id: 'cad-bbox-line',
-        type: 'line',
-        source: 'cad-bbox-source',
-        paint: {
-          'line-color': '#ff0077',
-          'line-width': 2.5,
-          'line-dasharray': [4, 3],
-          'line-opacity': 0.9
-        }
-      });
-    }
-
-    // 4. Project Anchor Point Marker Layer ("PROJECT ANCHOR")
-    if (!this.map.getSource('project-anchor-source')) {
-      this.map.addSource('project-anchor-source', {
-        type: 'geojson',
-        data: {
-          type: 'FeatureCollection',
-          features: [
-            {
-              type: 'Feature',
-              geometry: {
-                type: 'Point',
-                coordinates: [PROJECT_LOCATION.lng, PROJECT_LOCATION.lat]
-              },
-              properties: {
-                title: 'PROJECT ANCHOR'
-              }
-            }
-          ]
-        }
-      });
-
-      this.map.addLayer({
-        id: 'project-anchor-circle',
-        type: 'circle',
-        source: 'project-anchor-source',
-        paint: {
-          'circle-radius': 8,
-          'circle-color': '#ec4899',
-          'circle-stroke-width': 3,
-          'circle-stroke-color': '#ffffff'
-        }
-      });
-    }
+    const [minLng, minLat, maxLng, maxLat] = this.masterPlanPlotService.getWgs84Bbox();
+    this.map.fitBounds(
+      [
+        [minLng, minLat],
+        [maxLng, maxLat]
+      ],
+      {
+        padding: 80,
+        maxZoom: 19.5,
+        duration: 1400,
+        essential: true
+      }
+    );
   }
 
   /**
-   * Dynamically re-evaluates CAD -> WGS84 transform and updates MapLibre sources
+   * Toggles between Google Satellite overlay and Master Plan Only neutral studio canvas
    */
-  public refreshCadRoadsOverlay(): void {
+  public toggleMasterPlanViewMode(): void {
     if (!this.map || !this.isMapLoaded()) return;
+    const newMode = this.masterPlanRoadService.toggleViewMode();
+    const isStudio = newMode === 'MASTER_PLAN_ONLY';
 
-    const roadsSource = this.map.getSource('cad-roads-source') as maplibregl.GeoJSONSource;
-    if (roadsSource) {
-      roadsSource.setData(this.transformService.generateTransformedRoadsGeoJson());
+    if (this.map.getLayer('google-hybrid-satellite-layer')) {
+      this.map.setLayoutProperty(
+        'google-hybrid-satellite-layer',
+        'visibility',
+        isStudio ? 'none' : 'visible'
+      );
     }
 
-    const labelsSource = this.map.getSource('cad-road-labels-source') as maplibregl.GeoJSONSource;
-    if (labelsSource) {
-      labelsSource.setData(this.transformService.generateTransformedLabelsGeoJson());
+    // Toggle real-world POIs visibility so Studio Mode is dedicated master-plan geometry only
+    if (this.map.getLayer('osm-pois-circles')) {
+      this.map.setLayoutProperty('osm-pois-circles', 'visibility', isStudio ? 'none' : 'visible');
+    }
+    if (this.map.getLayer('osm-pois-icons')) {
+      this.map.setLayoutProperty('osm-pois-icons', 'visibility', isStudio ? 'none' : 'visible');
     }
 
-    const bboxSource = this.map.getSource('cad-bbox-source') as maplibregl.GeoJSONSource;
-    if (bboxSource) {
-      bboxSource.setData(this.transformService.generateBboxGeoJson());
+    // Toggle CAD road layers: visible in Studio mode, hidden in Satellite Overlay mode
+    const roadLayerIds = [
+      'masterplan-road-surface',
+      'masterplan-road-curb',
+      'masterplan-road-centerline',
+      'masterplan-road-labels'
+    ];
+    roadLayerIds.forEach(id => {
+      if (this.map?.getLayer(id)) {
+        this.map.setLayoutProperty(id, 'visibility', isStudio ? 'visible' : 'none');
+      }
+    });
+
+    // In Studio Canvas mode, hide the project marker pin so it does not block the road master plan
+    if (this.projectMarker) {
+      const markerEl = this.projectMarker.getElement();
+      if (markerEl) {
+        markerEl.style.display = isStudio ? 'none' : 'block';
+      }
     }
+
+    // Smoothly focus camera on the master plan layout
+    this.fitMasterPlanPlots();
   }
+
+  /**
+   * Refreshes road layer rendering
+   */
+  public refreshMasterPlanRoads(): void {
+    if (!this.map || !this.isMapLoaded()) return;
+    this.masterPlanRoadService.refreshRoadLayers(this.map);
+    this.masterPlanPlotService.refreshPlotLayers(this.map);
+  }
+
 
   public destroyMap(): void {
     if (this.safetyTimeout) {

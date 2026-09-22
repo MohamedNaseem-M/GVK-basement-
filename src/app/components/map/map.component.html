@@ -35,22 +35,22 @@
 
       <!-- Project Description -->
       <p class="project-description">
-        "GVK Enclave" is a premium gated plotting community designed with precision and elegance. Featuring a grand illuminated entrance, wide internal roads, landscaped open spaces, and well-planned residential plots, the project offers the perfect environment to build your dream home amidst scenic hill views and lush greenery.
+        "GVK Enclave" is a premium plotted community designed with precision and elegance. Featuring a grand entrance, wide internal road networks, landscaped open spaces, and well-planned residential plots, the project offers the perfect environment to build your dream home.
       </p>
 
       <!-- Key Project Statistics Grid -->
       <div class="stats-grid">
         <div class="stat-card">
-          <span class="stat-value">318</span>
-          <span class="stat-label">Total Plots</span>
+          <span class="stat-value">67</span>
+          <span class="stat-label">Road Corridors</span>
         </div>
         <div class="stat-card">
           <span class="stat-value text-sm">Cowl Bazaar</span>
           <span class="stat-label">Location · Ballari</span>
         </div>
         <div class="stat-card">
-          <span class="stat-value text-sm">93 - 294.53 m²</span>
-          <span class="stat-label">Plot Sizes</span>
+          <span class="stat-value text-sm">9M · 12M · 18M</span>
+          <span class="stat-label">Corridor Widths</span>
         </div>
       </div>
 
@@ -104,10 +104,12 @@
     <div class="header-card">
       <div class="brand-chip">
         <span class="pulse-dot"></span>
-        <span class="brand-text">{{ mapService.is3DMode() ? '3D PERSPECTIVE' : 'LIVE MAP' }}</span>
+        <span class="brand-text">
+          {{ masterPlanRoadService.viewMode() === 'SATELLITE_OVERLAY' ? 'SATELLITE + MASTER PLAN' : 'MASTER PLAN STUDIO' }}
+        </span>
       </div>
       <div class="header-title-group">
-        <h1 class="project-title">Property Visualization Platform</h1>
+        <h1 class="project-title">GVK Enclave Master Plan</h1>
         <div class="location-badge">
           <svg class="icon-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
@@ -119,8 +121,45 @@
     </div>
   </header>
 
-  <!-- Mobile-First Touch Action Controls (Min 48px Touch Targets) -->
+  <!-- Master Plan View Mode Switcher (Satellite Overlay vs Studio Canvas) -->
+  <div class="view-mode-bar">
+    <button
+      type="button"
+      class="mode-switch-btn"
+      [class.active]="masterPlanRoadService.viewMode() === 'SATELLITE_OVERLAY'"
+      (click)="masterPlanRoadService.viewMode() !== 'SATELLITE_OVERLAY' && onToggleViewMode()"
+      title="View Master Plan on Google Hybrid Satellite"
+    >
+      <span class="mode-icon">🛰️</span>
+      <span class="mode-text">Satellite Map</span>
+    </button>
+    <button
+      type="button"
+      class="mode-switch-btn"
+      [class.active]="masterPlanRoadService.viewMode() === 'MASTER_PLAN_ONLY'"
+      (click)="masterPlanRoadService.viewMode() !== 'MASTER_PLAN_ONLY' && onToggleViewMode()"
+      title="View Independent Master Plan on Neutral Studio Canvas"
+    >
+      <span class="mode-icon">📐</span>
+      <span class="mode-text">Master Plan Only</span>
+    </button>
+  </div>
+
+  <!-- Mobile-First Touch Action Controls -->
   <div class="touch-controls-group">
+    <!-- Focus Master Plan Layout Extent -->
+    <button
+      type="button"
+      class="touch-btn touch-btn-focus"
+      aria-label="Focus Master Plan Layout"
+      title="Focus Master Plan"
+      (click)="onFitMasterPlanPlots()"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path>
+      </svg>
+    </button>
+
     <!-- 2D / 3D Mode Toggle Button -->
     <button
       type="button"
@@ -137,6 +176,7 @@
       type="button"
       class="touch-btn"
       aria-label="Zoom In"
+      title="Zoom In"
       (click)="onZoomIn()"
     >
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
@@ -149,6 +189,7 @@
       type="button"
       class="touch-btn"
       aria-label="Zoom Out"
+      title="Zoom Out"
       (click)="onZoomOut()"
     >
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
@@ -173,76 +214,53 @@
     </button>
   </div>
 
-  <!-- Developer CAD Visual Calibration Control Overlay -->
-  <div class="calibration-overlay" [class.collapsed]="!showCalibrationPanel">
-    <div class="calib-header" (click)="showCalibrationPanel = !showCalibrationPanel">
-      <div class="calib-title">
-        <span class="calib-dot"></span>
-        <span>CAD Road Overlay Calibration</span>
-      </div>
-      <button type="button" class="calib-toggle-btn" aria-label="Toggle Panel">
-        {{ showCalibrationPanel ? '▼' : '▲' }}
-      </button>
-    </div>
-
-    <div class="calib-body" *ngIf="showCalibrationPanel">
-      <div class="calib-row">
-        <span class="calib-label">CAD Anchor:</span>
-        <span class="calib-val">({{ transformService.anchorCadX() }}, {{ transformService.anchorCadY() }})</span>
-      </div>
-      <div class="calib-row">
-        <span class="calib-label">Map Anchor:</span>
-        <span class="calib-val">({{ transformService.anchorLng() }}, {{ transformService.anchorLat() }})</span>
-      </div>
-
-      <!-- Legend & Entities summary -->
-      <div class="calib-legend">
-        <div class="legend-item"><span class="color-chip chip-9mab"></span> Road_9MAB (42)</div>
-        <div class="legend-item"><span class="color-chip chip-9mbl"></span> Road_9MBL (1)</div>
-        <div class="legend-item"><span class="color-chip chip-prop"></span> PROP_ROAD (24)</div>
-      </div>
-
-      <!-- Controls -->
-      <div class="calib-control">
-        <div class="ctrl-header">
-          <span>Scale (m/CAD):</span>
-          <strong>{{ transformService.scale() | number:'1.2-3' }}</strong>
+  <!-- Selected Plot Information Card (Mobile & Desktop) -->
+  @if (masterPlanPlotService.selectedPlot(); as plot) {
+    <div class="plot-info-card" role="dialog" aria-label="Selected Plot Information">
+      <div class="plot-card-header">
+        <div class="plot-card-title-group">
+          <span class="plot-tag">{{ plot.block || 'Residential Plot' }}</span>
+          <h2 class="plot-number">Plot #{{ plot.plotNumber }}</h2>
         </div>
-        <input
-          type="range"
-          min="0.2"
-          max="3.0"
-          step="0.01"
-          [ngModel]="transformService.scale()"
-          (ngModelChange)="onScaleChange($event)"
-          class="calib-slider"
-        />
-      </div>
-
-      <div class="calib-control">
-        <div class="ctrl-header">
-          <span>Rotation (°):</span>
-          <strong>{{ transformService.rotationDeg() | number:'1.1-1' }}°</strong>
-        </div>
-        <input
-          type="range"
-          min="-180"
-          max="180"
-          step="0.5"
-          [ngModel]="transformService.rotationDeg()"
-          (ngModelChange)="onRotationChange($event)"
-          class="calib-slider"
-        />
-      </div>
-
-      <div class="calib-btn-group">
-        <button type="button" class="calib-action-btn primary" (click)="onFitCadRoads()" title="Focus camera directly on CAD road extent">
-          🎯 FIT CAD ROADS
-        </button>
-        <button type="button" class="calib-reset-btn" (click)="onResetCalibration()">
-          Reset Baseline
+        <button
+          type="button"
+          class="plot-card-close-btn"
+          aria-label="Close plot info card"
+          (click)="onDismissPlotCard()"
+        >
+          ✕
         </button>
       </div>
+
+      <div class="plot-metrics-grid">
+        <div class="metric-item">
+          <span class="metric-label">Area (Sq.Ft)</span>
+          <span class="metric-value highlight">{{ plot.areaSqFt }} sq.ft</span>
+        </div>
+        <div class="metric-item">
+          <span class="metric-label">Area (Sq.M)</span>
+          <span class="metric-value">{{ plot.areaSqM }} m²</span>
+        </div>
+        @if (plot.dimensions) {
+          <div class="metric-item">
+            <span class="metric-label">Dimensions</span>
+            <span class="metric-value">{{ plot.dimensions }}</span>
+          </div>
+        }
+        @if (plot.status && plot.status !== 'UNKNOWN') {
+          <div class="metric-item">
+            <span class="metric-label">Status</span>
+            <span class="metric-badge status-{{ plot.status.toLowerCase() }}">{{ plot.status }}</span>
+          </div>
+        }
+      </div>
     </div>
+  }
+
+  <!-- Master Plan Layout Verification Badge -->
+  <div class="network-badge">
+    <div class="network-dot"></div>
+    <span class="network-text">318 CAD Plots · 67 Road Corridors · DXF Extracted</span>
   </div>
 </div>
+

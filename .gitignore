@@ -40,3 +40,8 @@ testem.log
 # System files
 .DS_Store
 Thumbs.db
+
+# Scratch & temporary files
+scratch/
+\#\ PlotVizApp.txt
+Untitled*.txt

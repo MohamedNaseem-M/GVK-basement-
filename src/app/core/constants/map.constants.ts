@@ -16,10 +16,10 @@ export const PROJECT_LOCATION: Coordinates = {
 export const INITIAL_MAP_CONFIG = {
   // MapLibre GL format: [longitude, latitude]
   center: [PROJECT_LOCATION.lng, PROJECT_LOCATION.lat] as [number, number],
-  zoom: 16.5,
+  zoom: 18.5,
   minZoom: 0,
   maxZoom: 22,
-  pitch: 55,
+  pitch: 50,
   bearing: -15,
   maxPitch: 75
 };
@@ -28,12 +28,12 @@ export const CAMERA_PRESETS = {
   view2D: {
     pitch: 0,
     bearing: 0,
-    zoom: 16.5
+    zoom: 18.5
   },
   view3D: {
-    pitch: 55,
-    bearing: -20,
-    zoom: 16.5
+    pitch: 50,
+    bearing: -15,
+    zoom: 18.5
   }
 };
 
@@ -62,6 +62,13 @@ export const BASEMAP_STYLES = {
       }
     },
     layers: [
+      {
+        id: 'masterplan-background',
+        type: 'background',
+        paint: {
+          'background-color': '#0f172a'
+        }
+      },
       {
         id: 'google-hybrid-satellite-layer',
         type: 'raster',

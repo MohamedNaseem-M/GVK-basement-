@@ -1,6 +1,7 @@
 import { Injectable, inject, signal, WritableSignal } from '@angular/core';
 import { DxfEntity, DxfVertex, RoadSegment } from '../core/models/road.model';
 import { RoadDataService } from './road-data.service';
+import { MasterPlanDataService } from './masterplan-data.service';
 
 export interface CalibrationParams {
   anchorCadX: number;
@@ -16,6 +17,7 @@ export interface CalibrationParams {
 })
 export class CoordinateTransformService {
   private readonly roadDataService = inject(RoadDataService);
+  private readonly masterPlanService = inject(MasterPlanDataService);
 
   // Initial Temporary Calibration Baseline Values (CAD Center -> Project Anchor)
   public readonly anchorCadX: WritableSignal<number> = signal(27109.35);
@@ -25,6 +27,11 @@ export class CoordinateTransformService {
   public readonly scale: WritableSignal<number> = signal(1.0); // 1.0 meter / CAD unit
   public readonly rotationDeg: WritableSignal<number> = signal(0.0); // 0 degrees
   public readonly isOverlayEnabled: WritableSignal<boolean> = signal(true);
+
+  // Master Plan CAD Anchor & Mode
+  public readonly masterPlanCadAnchorX: WritableSignal<number> = signal(26747.985);
+  public readonly masterPlanCadAnchorY: WritableSignal<number> = signal(1547.750);
+  public readonly masterPlanAnchorMode: WritableSignal<'DIRECT_CENTER' | 'DXF_SHARED_FRAME'> = signal('DIRECT_CENTER');
 
   /**
    * Transforms a 2D Local CAD coordinate (X, Y) into WGS84 Geographic [longitude, latitude]
@@ -49,6 +56,166 @@ export class CoordinateTransformService {
     const lat = this.anchorLat() + (northMeters / metersPerDegLat);
 
     return [lng, lat];
+  }
+
+  /**
+   * Transforms Master Plan CAD coordinates to WGS84 based on the configured anchor mode
+   */
+  public cadMasterPlanToWgs84(cadX: number, cadY: number): [number, number] {
+    let dx: number;
+    let dy: number;
+
+    if (this.masterPlanAnchorMode() === 'DIRECT_CENTER') {
+      dx = cadX - this.masterPlanCadAnchorX();
+      dy = cadY - this.masterPlanCadAnchorY();
+    } else {
+      // DXF_SHARED_FRAME: Preserves CAD spatial offset from the road dataset anchor
+      dx = cadX - this.anchorCadX();
+      dy = cadY - this.anchorCadY();
+    }
+
+    const scaleVal = this.scale();
+    const rotRad = (this.rotationDeg() * Math.PI) / 180;
+
+    const eastMeters = scaleVal * (dx * Math.cos(rotRad) - dy * Math.sin(rotRad));
+    const northMeters = scaleVal * (dx * Math.sin(rotRad) + dy * Math.cos(rotRad));
+
+    const baseLatRad = (this.anchorLat() * Math.PI) / 180;
+    const metersPerDegLat = 110600.0;
+    const metersPerDegLng = 111320.0 * Math.cos(baseLatRad);
+
+    const lng = this.anchorLng() + (eastMeters / metersPerDegLng);
+    const lat = this.anchorLat() + (northMeters / metersPerDegLat);
+
+    return [lng, lat];
+  }
+
+  /**
+   * Generates WGS84 GeoJSON FeatureCollection of reconstructed test plot polygons (Plots 1–20)
+   */
+  public generateTransformedPlotsGeoJson(): any {
+    const plots = this.masterPlanService.testPlots();
+    const selected = this.masterPlanService.selectedPlot();
+
+    const features = plots.map(plot => {
+      const geoCoords = plot.cadPolygon.map(([cx, cy]) => this.cadMasterPlanToWgs84(cx, cy));
+      const [centerLng, centerLat] = this.cadMasterPlanToWgs84(plot.cadCenter[0], plot.cadCenter[1]);
+
+      return {
+        type: 'Feature',
+        id: plot.plotNumber,
+        geometry: {
+          type: 'Polygon',
+          coordinates: [geoCoords]
+        },
+        properties: {
+          plotNumber: plot.plotNumber,
+          plotLabel: `Plot ${plot.plotNumber}`,
+          block: plot.block,
+          dimensions: plot.dimensions,
+          areaSqM: plot.areaSqM,
+          areaSqFt: plot.areaSqFt,
+          isTestSubset: true,
+          isSelected: selected?.plotNumber === plot.plotNumber,
+          centerLng,
+          centerLat
+        }
+      };
+    });
+
+    return {
+      type: 'FeatureCollection',
+      features
+    };
+  }
+
+  /**
+   * Generates WGS84 GeoJSON Point FeatureCollection for plot number labels
+   */
+  public generateTransformedPlotLabelsGeoJson(): any {
+    const plots = this.masterPlanService.testPlots();
+
+    const features = plots.map(plot => {
+      const [lng, lat] = this.cadMasterPlanToWgs84(plot.cadCenter[0], plot.cadCenter[1]);
+
+      return {
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: [lng, lat]
+        },
+        properties: {
+          plotNumber: plot.plotNumber,
+          plotNumberStr: `${plot.plotNumber}`,
+          block: plot.block,
+          dimensions: plot.dimensions,
+          areaSqM: plot.areaSqM
+        }
+      };
+    });
+
+    return {
+      type: 'FeatureCollection',
+      features
+    };
+  }
+
+  /**
+   * Generates WGS84 GeoJSON FeatureCollection for Master Plan road corridors framing Block 1
+   */
+  public generateTransformedMasterPlanRoadsGeoJson(): any {
+    const corridors = this.masterPlanService.roadCorridors();
+
+    const features = corridors.map((corridor, idx) => {
+      const geoCoords = corridor.cadPolygon.map(([cx, cy]) => this.cadMasterPlanToWgs84(cx, cy));
+
+      return {
+        type: 'Feature',
+        id: `mp-road-${idx}`,
+        geometry: {
+          type: 'Polygon',
+          coordinates: [geoCoords]
+        },
+        properties: {
+          name: corridor.name,
+          widthMeters: corridor.widthMeters,
+          type: corridor.type
+        }
+      };
+    });
+
+    return {
+      type: 'FeatureCollection',
+      features
+    };
+  }
+
+  /**
+   * Computes geographic bounding box for Master Plan test subset [minLng, minLat, maxLng, maxLat]
+   */
+  public getMasterPlanBbox(): [number, number, number, number] {
+    const geoJson = this.generateTransformedPlotsGeoJson();
+    let minLng = Infinity, maxLng = -Infinity, minLat = Infinity, maxLat = -Infinity;
+
+    geoJson.features.forEach((f: any) => {
+      f.geometry.coordinates[0].forEach(([lng, lat]: [number, number]) => {
+        if (lng < minLng) minLng = lng;
+        if (lng > maxLng) maxLng = lng;
+        if (lat < minLat) minLat = lat;
+        if (lat > maxLat) maxLat = lat;
+      });
+    });
+
+    if (!isFinite(minLng)) return [76.901, 15.126, 76.902, 15.127];
+    return [minLng, minLat, maxLng, maxLat];
+  }
+
+  /**
+   * Toggles master plan anchor mode between DIRECT_CENTER and DXF_SHARED_FRAME
+   */
+  public toggleMasterPlanAnchorMode(): void {
+    const current = this.masterPlanAnchorMode();
+    this.masterPlanAnchorMode.set(current === 'DIRECT_CENTER' ? 'DXF_SHARED_FRAME' : 'DIRECT_CENTER');
   }
 
   /**

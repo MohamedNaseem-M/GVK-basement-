@@ -29,8 +29,19 @@
               {
                 "glob": "**/*",
                 "input": "public"
+              },
+              {
+                "glob": "gvk-plots.geojson",
+                "input": "src/app/masterplan/data/plots",
+                "output": "data/plots"
+              },
+              {
+                "glob": "maplibre-gl-*.mjs",
+                "input": "node_modules/maplibre-gl/dist",
+                "output": "."
               }
             ],
+
             "styles": [
               "src/styles.scss"
             ],
@@ -41,14 +52,15 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "1.5MB",
-                  "maximumError": "3MB"
+                  "maximumWarning": "2MB",
+                  "maximumError": "4MB"
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "6kB",
-                  "maximumError": "12kB"
+                  "maximumWarning": "10kB",
+                  "maximumError": "20kB"
                 }
+
               ],
               "outputHashing": "all"
             },
