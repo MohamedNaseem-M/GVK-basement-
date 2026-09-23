@@ -804,16 +804,17 @@ export class MapService {
       this.map.setLayoutProperty('osm-pois-icons', 'visibility', isStudio ? 'none' : 'visible');
     }
 
-    // Toggle CAD road layers: visible in Studio mode, hidden in Satellite Overlay mode
+    // Master plan road and amenity layers remain visible in both modes
     const roadLayerIds = [
       'masterplan-road-surface',
       'masterplan-road-curb',
-      'masterplan-road-centerline',
+      'masterplan-amenity-surface',
+      'masterplan-amenity-border',
       'masterplan-road-labels'
     ];
     roadLayerIds.forEach(id => {
       if (this.map?.getLayer(id)) {
-        this.map.setLayoutProperty(id, 'visibility', isStudio ? 'visible' : 'none');
+        this.map.setLayoutProperty(id, 'visibility', 'visible');
       }
     });
 

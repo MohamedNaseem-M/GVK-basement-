@@ -9,18 +9,13 @@ export const ROAD_LABELS_SOURCE_ID = 'masterplan-road-labels-source';
 
 export const ROAD_LAYERS = {
   // 1. Filled Road Corridor Surface (Dark Asphalt/Slate)
-  // Excludes unwanted central block structures (16060, 16062, 160A1, 160A9)
   surfaceLayer: {
     id: 'masterplan-road-surface',
     type: 'fill' as const,
     source: ROAD_SOURCE_ID,
-    filter: [
-      'all',
-      ['==', ['geometry-type'], 'Polygon'],
-      ['!in', ['get', 'sourceEntityHandle'], ['literal', ['16060', '16062', '160A1', '160A9']]]
-    ],
+    filter: ['==', ['get', 'isCorridor'], true],
     layout: {
-      visibility: 'none' as const
+      visibility: 'visible' as const
     },
     paint: {
       'fill-color': MASTERPLAN_ROAD_STYLES.asphaltSurfaceColor,
@@ -33,9 +28,9 @@ export const ROAD_LAYERS = {
     id: 'masterplan-road-curb',
     type: 'line' as const,
     source: ROAD_SOURCE_ID,
-    filter: ['!in', ['get', 'sourceEntityHandle'], ['literal', ['16060', '16062', '160A1', '160A9']]],
+    filter: ['==', ['get', 'isCorridor'], true],
     layout: {
-      visibility: 'none' as const,
+      visibility: 'visible' as const,
       'line-cap': 'round' as const,
       'line-join': 'round' as const
     },
@@ -43,63 +38,108 @@ export const ROAD_LAYERS = {
       'line-color': MASTERPLAN_ROAD_STYLES.curbBorderColor,
       'line-width': [
         'interpolate', ['linear'], ['zoom'],
-        12, 2.0,
-        15, 3.5,
-        18, 6.0,
-        20, 9.0
+        12, 1.5,
+        15, 2.5,
+        18, 4.5,
+        20, 7.0
       ],
       'line-opacity': MASTERPLAN_ROAD_STYLES.curbBorderOpacity
     }
   },
 
-  // 3. Open Centerline & Auxiliary Linework
-  centerlineLayer: {
-    id: 'masterplan-road-centerline',
+  // 3. Master Plan Amenities Surface (Parks, CA Site, ENTRY)
+  amenitySurfaceLayer: {
+    id: 'masterplan-amenity-surface',
+    type: 'fill' as const,
+    source: ROAD_SOURCE_ID,
+    filter: ['==', ['get', 'isAmenity'], true],
+    layout: {
+      visibility: 'visible' as const
+    },
+    paint: {
+      'fill-color': [
+        'match',
+        ['get', 'amenityType'],
+        'PARK', '#4d7c0f',
+        'CA_SITE', '#d6c7a1',
+        'ENTRY', '#7dd3fc',
+        '#334155'
+      ],
+      'fill-opacity': 0.92
+    }
+  },
+
+  // 4. Master Plan Amenities Border Edges
+  amenityBorderLayer: {
+    id: 'masterplan-amenity-border',
     type: 'line' as const,
     source: ROAD_SOURCE_ID,
-    filter: ['==', ['geometry-type'], 'LineString'],
+    filter: ['==', ['get', 'isAmenity'], true],
     layout: {
-      visibility: 'none' as const,
+      visibility: 'visible' as const,
       'line-cap': 'round' as const,
       'line-join': 'round' as const
     },
     paint: {
-      'line-color': MASTERPLAN_ROAD_STYLES.centerlineColor,
-      'line-width': [
-        'interpolate', ['linear'], ['zoom'],
-        12, 1.5,
-        15, 2.5,
-        18, 4.0,
-        20, 6.0
+      'line-color': [
+        'match',
+        ['get', 'amenityType'],
+        'PARK', '#365314',
+        'CA_SITE', '#475569',
+        'ENTRY', '#0284c7',
+        '#334155'
       ],
-      'line-opacity': MASTERPLAN_ROAD_STYLES.centerlineOpacity
+      'line-width': 1.5,
+      'line-opacity': 0.95
     }
   },
 
-  // 4. Road Width Text Callouts (9M ROAD, 12M ROAD, GOWLI HATTI ROAD)
+  // 5. Road Width & Amenity Text Callouts (9 Meter Road, 12 Meter Road, Park, CA Site, ENTRY)
   labelsLayer: {
     id: 'masterplan-road-labels',
     type: 'symbol' as const,
     source: ROAD_LABELS_SOURCE_ID,
-    minzoom: 15,
+    minzoom: 14.5,
     layout: {
-      visibility: 'none' as const,
+      visibility: 'visible' as const,
       'text-field': ['get', 'text'],
       'text-size': [
         'interpolate', ['linear'], ['zoom'],
-        15, 10,
-        17, 12,
-        19, 14,
-        21, 16
+        14, 9,
+        16, 11,
+        18, 13,
+        20, 16
       ],
       'text-anchor': 'center' as const,
       'text-allow-overlap': false,
       'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold']
     },
     paint: {
-      'text-color': MASTERPLAN_ROAD_STYLES.labelColor,
-      'text-halo-color': MASTERPLAN_ROAD_STYLES.labelHaloColor,
-      'text-halo-width': MASTERPLAN_ROAD_STYLES.labelHaloWidth
+      'text-color': [
+        'case',
+        ['==', ['get', 'isAmenityLabel'], true],
+        [
+          'match',
+          ['get', 'width'],
+          'CA_SITE', '#1e293b',
+          'ENTRY', '#0369a1',
+          '#ffffff'
+        ],
+        '#ffffff'
+      ],
+      'text-halo-color': [
+        'case',
+        ['==', ['get', 'isAmenityLabel'], true],
+        [
+          'match',
+          ['get', 'width'],
+          'CA_SITE', '#fef3c7',
+          'ENTRY', '#e0f2fe',
+          '#1e293b'
+        ],
+        '#0f172a'
+      ],
+      'text-halo-width': 2.5
     }
   }
 };

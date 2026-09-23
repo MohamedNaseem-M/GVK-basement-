@@ -31,15 +31,25 @@ export interface RawDxfLabel {
   rotationDeg: number;
 }
 
+export interface MasterPlanRoadCorridorDef {
+  id: string;
+  name: string;
+  width: RoadWidthCategory;
+  cadPolygon: Array<[number, number]>;
+  label: string;
+  labelPos: [number, number];
+  labelRotationDeg: number;
+}
+
 /**
- * Authoritative processor that converts raw DXF extracted road entities and labels
- * into structured GeoJSON FeatureCollections, preserving exact CAD geometry.
+ * Authoritative processor that converts raw DXF extracted road entities, labels,
+ * and master plan road corridors into structured GeoJSON FeatureCollections,
+ * preserving exact CAD geometry and adhering to authoritative widths (9M, 12M).
  */
 export class RoadGeometryProcessor {
   /**
-   * Generates a road surface FeatureCollection.
+   * Generates a road surface FeatureCollection from raw DXF entities.
    * If transformFn is provided, coordinates are projected (e.g. CAD -> WGS84).
-   * Otherwise, local CAD coordinates are returned directly.
    */
   public static processRoadFeatures(
     entities: RawDxfEntity[],
@@ -54,7 +64,6 @@ export class RoadGeometryProcessor {
 
       if (ent.entityType === 'LWPOLYLINE' && ent.vertices && ent.vertices.length > 0) {
         cadPoints = expandPolylineBulges(ent.vertices, isClosed);
-        // If endpoints match within 0.05m, treat as closed polygon
         if (cadPoints.length >= 4) {
           const p1 = cadPoints[0];
           const p2 = cadPoints[cadPoints.length - 1];
@@ -70,17 +79,14 @@ export class RoadGeometryProcessor {
 
       if (cadPoints.length < 2) return;
 
-      // Project coordinates if transformFn provided
       const outputCoords: Array<[number, number]> = transformFn
         ? cadPoints.map(([x, y]) => transformFn(x, y))
         : cadPoints;
 
-      // Classify road type
       let roadType: RoadType = 'ROAD_9MAB';
       if (ent.layer === 'Road_9MBL') roadType = 'ROAD_9MBL';
       else if (ent.layer === 'PROP_ROAD') roadType = 'PROP_ROAD';
 
-      // Width classification based on explicit DXF layer and nearest text label
       let width: RoadWidthCategory = 'UNKNOWN';
       if (ent.layer === 'Road_9MAB' || ent.layer === 'Road_9MBL') {
         width = '9M';
@@ -90,7 +96,7 @@ export class RoadGeometryProcessor {
       const entCenterY = ent.bbox ? (ent.bbox[1] + ent.bbox[3]) / 2 : cadPoints[0][1];
 
       let nearestLabel: string | null = null;
-      let minDistance = 6.0; // 6 CAD meters proximity threshold
+      let minDistance = 6.0;
       labels.forEach(lbl => {
         const d = Math.hypot(lbl.position[0] - entCenterX, lbl.position[1] - entCenterY);
         if (d < minDistance) {
@@ -113,13 +119,15 @@ export class RoadGeometryProcessor {
       const metadata: RoadFeatureMetadata = {
         layer: ent.layer,
         sourceEntityHandle: ent.handle,
+        handle: ent.handle,
         roadType,
         width,
         label: labelText,
         geometrySource: 'DXF_EXTRACTION',
         entityType: ent.entityType,
         closed: isClosed,
-        hasBulges: ent.vertices ? ent.vertices.some(v => v.bulge && v.bulge !== 0) : false
+        hasBulges: ent.vertices ? ent.vertices.some(v => v.bulge && v.bulge !== 0) : false,
+        isDxfEntity: true
       };
 
       if (isClosed && outputCoords.length >= 4) {
@@ -153,7 +161,7 @@ export class RoadGeometryProcessor {
   }
 
   /**
-   * Generates a road label Point FeatureCollection.
+   * Generates a road label Point FeatureCollection from raw DXF labels.
    */
   public static processRoadLabels(
     labels: RawDxfLabel[],

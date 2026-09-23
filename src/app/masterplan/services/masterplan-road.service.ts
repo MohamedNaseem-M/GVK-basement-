@@ -24,25 +24,56 @@ export class MasterPlanRoadService {
   private readonly rawEntities: RawDxfEntity[] = (rawDxfRoadData.entities as unknown) as RawDxfEntity[];
   private readonly rawLabels: RawDxfLabel[] = (rawDxfRoadData.labels as unknown) as RawDxfLabel[];
 
+  // Active road dataset
+  private roadsDataset: MasterPlanRoadGeoJsonCollection = GVK_ROADS_GEOJSON;
+  private roadLabelsDataset: MasterPlanRoadLabelCollection = GVK_ROAD_LABELS_GEOJSON;
+
   // Reactive state signals
   public readonly isRoadLoaded: WritableSignal<boolean> = signal(true);
-  public readonly roadFeaturesCount: WritableSignal<number> = signal(67);
-  public readonly roadLabelsCount: WritableSignal<number> = signal(46);
+  public readonly roadFeaturesCount: WritableSignal<number> = signal(GVK_ROADS_GEOJSON.features.length);
+  public readonly roadLabelsCount: WritableSignal<number> = signal(GVK_ROAD_LABELS_GEOJSON.features.length);
   public readonly viewMode: WritableSignal<MasterPlanViewMode> = signal('SATELLITE_OVERLAY');
   public readonly selectedRoadHandle: WritableSignal<string | null> = signal(null);
 
+  private mapInstance: maplibregl.Map | null = null;
+
+  constructor() {
+    this.syncAuthoritativeGeoJson();
+  }
+
   /**
-   * Returns authoritative WGS84 GeoJSON FeatureCollection of 67 road corridors
+   * Attempts to fetch the static gvk-roads.geojson artifact to ensure exact alignment
+   */
+  private async syncAuthoritativeGeoJson(): Promise<void> {
+    try {
+      const response = await fetch('data/roads/gvk-roads.geojson?v=2');
+      if (response.ok) {
+        const json = await response.json();
+        if (json && json.features && json.features.length > 0) {
+          this.roadsDataset = json;
+          this.roadFeaturesCount.set(json.features.length);
+          if (this.mapInstance && this.mapInstance.getSource(ROAD_SOURCE_ID)) {
+            (this.mapInstance.getSource(ROAD_SOURCE_ID) as maplibregl.GeoJSONSource).setData(this.roadsDataset as any);
+          }
+        }
+      }
+    } catch {
+      // Retain bundled dataset
+    }
+  }
+
+  /**
+   * Returns authoritative WGS84 GeoJSON FeatureCollection of road corridors and amenities
    */
   public getWgs84RoadsGeoJson(): MasterPlanRoadGeoJsonCollection {
-    return GVK_ROADS_GEOJSON;
+    return this.roadsDataset;
   }
 
   /**
    * Returns authoritative WGS84 Point FeatureCollection for road width callout labels
    */
   public getWgs84RoadLabelsGeoJson(): MasterPlanRoadLabelCollection {
-    return GVK_ROAD_LABELS_GEOJSON;
+    return this.roadLabelsDataset;
   }
 
   /**
@@ -59,7 +90,7 @@ export class MasterPlanRoadService {
    * Computes geographic bounding box [minLng, minLat, maxLng, maxLat] for camera fitting
    */
   public getWgs84Bbox(): [number, number, number, number] {
-    return [76.9012406, 15.1264155, 76.9023074, 15.1270552];
+    return [76.8995853, 15.1252762, 76.9018687, 15.1285144];
   }
 
   /**
@@ -67,6 +98,7 @@ export class MasterPlanRoadService {
    */
   public attachRoadLayersToMap(map: maplibregl.Map): void {
     if (!map) return;
+    this.mapInstance = map;
 
     const roadsGeoJson = this.getWgs84RoadsGeoJson();
     const labelsGeoJson = this.getWgs84RoadLabelsGeoJson();
@@ -88,9 +120,14 @@ export class MasterPlanRoadService {
         map.addLayer(ROAD_LAYERS.curbLayer as any);
       }
 
-      // Layer 3: Centerlines & Dividers
-      if (!map.getLayer(ROAD_LAYERS.centerlineLayer.id)) {
-        map.addLayer(ROAD_LAYERS.centerlineLayer as any);
+      // Layer 3: Amenities Surface (Parks, CA Site, Entry)
+      if (!map.getLayer(ROAD_LAYERS.amenitySurfaceLayer.id)) {
+        map.addLayer(ROAD_LAYERS.amenitySurfaceLayer as any);
+      }
+
+      // Layer 4: Amenities Borders
+      if (!map.getLayer(ROAD_LAYERS.amenityBorderLayer.id)) {
+        map.addLayer(ROAD_LAYERS.amenityBorderLayer as any);
       }
     }
 
