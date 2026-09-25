@@ -61,21 +61,29 @@ export const SELECTED_PLOT_LAYERS = {
     source: SELECTED_PLOT_SOURCE_ID,
     filter: ['==', ['get', 'type'], 'CENTER_LABEL'],
     layout: {
-      'text-field': ['get', 'fullLabel'],
+      'text-field': [
+        'format',
+        ['get', 'plotNumText'], { 'font-scale': 1.2 },
+        '\n', {},
+        ['get', 'areaSqMText'], { 'font-scale': 0.9 },
+        '\n', {},
+        ['get', 'areaSqFtText'], { 'font-scale': 0.78 }
+      ] as any,
       'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
       'text-size': [
-        'interpolate', ['exponential', 2], ['zoom'],
-        14, 2.5,
-        17, 13,
-        18, 22,
-        19, 44,
-        20, 85
+        'interpolate', ['linear'], ['zoom'],
+        15, 4.0,
+        17, 8.0,
+        18, 12.0,
+        19, 17.0,
+        20, 24.0,
+        21, 32.0
       ] as any,
       'text-anchor': 'center' as const,
       'text-allow-overlap': true,
       'text-ignore-placement': true,
       'text-justify': 'center' as const,
-      'text-line-height': 1.2
+      'text-line-height': 1.15
     },
     paint: {
       'text-color': '#ffffff',
@@ -92,12 +100,13 @@ export const SELECTED_PLOT_LAYERS = {
       'text-field': ['get', 'dimensionText'],
       'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
       'text-size': [
-        'interpolate', ['exponential', 2], ['zoom'],
-        14, 1.5,
-        17, 8.5,
-        18, 14,
-        19, 25,
-        20, 48
+        'interpolate', ['linear'], ['zoom'],
+        15, 3.0,
+        17, 5.5,
+        18, 8.0,
+        19, 11.0,
+        20, 15.0,
+        21, 20.0
       ] as any,
       'text-rotate': ['get', 'rotationDeg'],
       'text-rotation-alignment': 'map' as const,
@@ -110,7 +119,7 @@ export const SELECTED_PLOT_LAYERS = {
     paint: {
       'text-color': '#ffffff',
       'text-halo-color': '#000000',
-      'text-halo-width': 2.5
+      'text-halo-width': 1.5
     }
   }
 };
@@ -376,7 +385,9 @@ export class MasterPlanPlotService {
     const centroidLng = sumLng / n;
     const centroidLat = sumLat / n;
 
-    const fullLabel = `${plotNumber}\n${areaSqM} m²\n${areaSqFtFormatted} ft²`;
+    const plotNumText = `${plotNumber}`;
+    const areaSqMText = `${areaSqM} m²`;
+    const areaSqFtText = `${areaSqFtFormatted} ft²`;
 
     const centerLabelFeature = {
       type: 'Feature',
@@ -386,7 +397,9 @@ export class MasterPlanPlotService {
       },
       properties: {
         type: 'CENTER_LABEL',
-        fullLabel
+        plotNumText,
+        areaSqMText,
+        areaSqFtText
       }
     };
 
