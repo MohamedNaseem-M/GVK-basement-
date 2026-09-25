@@ -45,11 +45,13 @@ export const SELECTED_PLOT_LAYERS = {
       'text-field': '+',
       'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
       'text-size': [
-        'interpolate', ['linear'], ['zoom'],
-        14, 8,
-        17, 12,
-        19.5, 18,
-        21, 24
+        'interpolate', ['exponential', 2], ['zoom'],
+        14, 0.25,
+        17, 2.0,
+        18, 4.0,
+        19, 8.0,
+        20, 16.0,
+        21, 32.0
       ] as any,
       'text-anchor': 'center' as const,
       'text-allow-overlap': true,
@@ -77,13 +79,13 @@ export const SELECTED_PLOT_LAYERS = {
       ] as any,
       'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
       'text-size': [
-        'interpolate', ['linear'], ['zoom'],
-        14, 4.0,
-        16, 9.0,
-        17.5, 16.0,
-        19.0, 25.0,
-        20.0, 35.0,
-        21.0, 48.0
+        'interpolate', ['exponential', 2], ['zoom'],
+        14, 0.5,
+        17, 4.0,
+        18, 8.0,
+        19, 16.0,
+        20, 32.0,
+        21, 64.0
       ] as any,
       'text-anchor': 'center' as const,
       'text-allow-overlap': true,
@@ -106,13 +108,13 @@ export const SELECTED_PLOT_LAYERS = {
       'text-field': ['get', 'dimensionText'],
       'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
       'text-size': [
-        'interpolate', ['linear'], ['zoom'],
-        14, 3.0,
-        16, 6.0,
-        17.5, 10.0,
-        19.0, 15.0,
-        20.0, 21.0,
-        21.0, 28.0
+        'interpolate', ['exponential', 2], ['zoom'],
+        14, 0.3125,
+        17, 2.5,
+        18, 5.0,
+        19, 10.0,
+        20, 20.0,
+        21, 40.0
       ] as any,
       'text-rotate': ['get', 'rotationDeg'],
       'text-rotation-alignment': 'map' as const,
