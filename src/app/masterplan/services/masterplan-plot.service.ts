@@ -284,9 +284,10 @@ export class MasterPlanPlotService {
   }
 
   /**
-   * Selects a plot by its number and updates MapLibre feature state & overlay layers
+   * Selects a plot by its number, updates MapLibre feature state & overlay layers,
+   * and smoothly animates the camera to zoom in on the selected plot.
    */
-  public selectPlot(plotNumber: number | null, properties?: any): void {
+  public selectPlot(plotNumber: number | null, properties?: any, zoomToPlot = true): void {
     const currentSelectedId = this.selectedPlotId();
 
     // Clear previous highlight
@@ -333,7 +334,47 @@ export class MasterPlanPlotService {
       }
 
       this.updateSelectionOverlay(feature);
+
+      // Smoothly animate camera to zoom in on the clicked plot
+      if (zoomToPlot && this.mapInstance) {
+        this.zoomToPlotFeature(feature);
+      }
     }
+  }
+
+  /**
+   * Smoothly animates camera to frame and center the selected plot
+   */
+  public zoomToPlotFeature(feature: MasterPlanPlotFeature): void {
+    if (!this.mapInstance || !feature.geometry || !feature.geometry.coordinates) return;
+
+    const ring = feature.geometry.coordinates[0];
+    let minLng = Infinity, minLat = Infinity, maxLng = -Infinity, maxLat = -Infinity;
+    for (const [lng, lat] of ring) {
+      if (lng < minLng) minLng = lng;
+      if (lat < minLat) minLat = lat;
+      if (lng > maxLng) maxLng = lng;
+      if (lat > maxLat) maxLat = lat;
+    }
+
+    // Responsive padding based on viewport dimensions
+    const width = typeof window !== 'undefined' ? window.innerWidth : 1024;
+    const padding = width < 768
+      ? { top: 60, bottom: 60, left: 40, right: 40 }
+      : { top: 90, bottom: 90, left: 90, right: 90 };
+
+    this.mapInstance.fitBounds(
+      [
+        [minLng, minLat],
+        [maxLng, maxLat]
+      ],
+      {
+        padding,
+        maxZoom: 19.8,
+        duration: 1000,
+        essential: true
+      }
+    );
   }
 
   /**
