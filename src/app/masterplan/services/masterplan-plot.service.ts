@@ -71,13 +71,13 @@ export const SELECTED_PLOT_LAYERS = {
       ] as any,
       'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
       'text-size': [
-        'interpolate', ['linear'], ['zoom'],
-        15, 4.0,
+        'interpolate', ['exponential', 2], ['zoom'],
+        14, 1.0,
         17, 8.0,
-        18, 12.0,
-        19, 17.0,
-        20, 24.0,
-        21, 32.0
+        18, 16.0,
+        19, 32.0,
+        20, 64.0,
+        21, 128.0
       ] as any,
       'text-anchor': 'center' as const,
       'text-allow-overlap': true,
@@ -100,13 +100,13 @@ export const SELECTED_PLOT_LAYERS = {
       'text-field': ['get', 'dimensionText'],
       'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
       'text-size': [
-        'interpolate', ['linear'], ['zoom'],
-        15, 3.0,
-        17, 5.5,
-        18, 8.0,
-        19, 11.0,
-        20, 15.0,
-        21, 20.0
+        'interpolate', ['exponential', 2], ['zoom'],
+        14, 0.75,
+        17, 6.0,
+        18, 12.0,
+        19, 24.0,
+        20, 48.0,
+        21, 96.0
       ] as any,
       'text-rotate': ['get', 'rotationDeg'],
       'text-rotation-alignment': 'map' as const,
