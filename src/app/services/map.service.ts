@@ -688,14 +688,14 @@ export class MapService {
     const height = typeof window !== 'undefined' ? window.innerHeight : 768;
 
     if (width < 768) {
-      // Mobile portrait / small screens: tight side margins so masterplan dominates the screen width
-      return { top: 30, bottom: 35, left: 15, right: 15 };
+      // Mobile portrait / small screens: subtle tighter padding for ~10-15% visual boost
+      return { top: 20, bottom: 25, left: 10, right: 10 };
     } else if (width < 1024) {
       // Tablet screens
-      return { top: 35, bottom: 40, left: 30, right: 30 };
+      return { top: 25, bottom: 30, left: 20, right: 20 };
     } else {
-      // Desktop screens: clean, professional margins
-      return { top: 40, bottom: 45, left: 45, right: 45 };
+      // Desktop screens: clean, professional 10-15% larger framing
+      return { top: 30, bottom: 35, left: 30, right: 30 };
     }
   }
 

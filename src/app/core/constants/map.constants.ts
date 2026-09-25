@@ -16,7 +16,7 @@ export const PROJECT_LOCATION: Coordinates = {
 export const INITIAL_MAP_CONFIG = {
   // MapLibre GL format: [longitude, latitude]
   center: [PROJECT_LOCATION.lng, PROJECT_LOCATION.lat] as [number, number],
-  zoom: 18.8,
+  zoom: 19.0,
   minZoom: 0,
   maxZoom: 22,
   pitch: 50,
@@ -28,12 +28,12 @@ export const CAMERA_PRESETS = {
   view2D: {
     pitch: 0,
     bearing: 0,
-    zoom: 18.8
+    zoom: 19.0
   },
   view3D: {
     pitch: 50,
     bearing: -15,
-    zoom: 18.8
+    zoom: 19.0
   }
 };
 
