@@ -56,12 +56,12 @@ export const PLOT_LAYERS = {
     }
   },
 
-  // 3. Dark Bold Plot Numbers with White Contrast Halo matching Reference Photo
+  // 3. Dark Bold Plot Numbers with White Contrast Halo (Proportional to plot size on zoom)
   labelsLayer: {
     id: 'masterplan-plots-labels',
     type: 'symbol' as const,
     source: PLOT_SOURCE_ID,
-    minzoom: 15.0,
+    minzoom: 16.5,
     layout: {
       'text-field': [
         'case',
@@ -76,18 +76,17 @@ export const PLOT_LAYERS = {
       'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
       'text-size': [
         'interpolate', ['linear'], ['zoom'],
-        15.0, 9.0,
-        16.0, 12.0,
-        17.0, 14.5,
-        18.0, 17.5,
-        19.0, 21.5,
-        20.0, 26.0,
-        21.0, 32.0
+        16.5, 7.5,
+        17.5, 10.5,
+        18.5, 14.0,
+        19.5, 18.5,
+        20.5, 23.5,
+        21.5, 28.0
       ] as any,
       'text-anchor': 'center' as const,
-      'text-allow-overlap': true,
-      'text-ignore-placement': true,
-      'text-padding': 0
+      'text-allow-overlap': false,
+      'text-ignore-placement': false,
+      'text-padding': 0.5
     },
     paint: {
       'text-color': MASTERPLAN_PLOT_STYLES.labelColor,
