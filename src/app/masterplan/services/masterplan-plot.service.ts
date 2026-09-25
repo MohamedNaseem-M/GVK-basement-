@@ -44,7 +44,13 @@ export const SELECTED_PLOT_LAYERS = {
     layout: {
       'text-field': '+',
       'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
-      'text-size': 14,
+      'text-size': [
+        'interpolate', ['linear'], ['zoom'],
+        14, 4,
+        17, 7,
+        19.5, 10,
+        21, 14
+      ] as any,
       'text-anchor': 'center' as const,
       'text-allow-overlap': true,
       'text-ignore-placement': true
@@ -52,7 +58,7 @@ export const SELECTED_PLOT_LAYERS = {
     paint: {
       'text-color': '#ffffff',
       'text-halo-color': '#000000',
-      'text-halo-width': 1.5
+      'text-halo-width': 1.2
     }
   },
   centerLabel: {
@@ -63,7 +69,7 @@ export const SELECTED_PLOT_LAYERS = {
     layout: {
       'text-field': [
         'format',
-        ['get', 'plotNumText'], { 'font-scale': 1.2 },
+        ['get', 'plotNumText'], { 'font-scale': 1.25 },
         '\n', {},
         ['get', 'areaSqMText'], { 'font-scale': 0.9 },
         '\n', {},
@@ -71,13 +77,12 @@ export const SELECTED_PLOT_LAYERS = {
       ] as any,
       'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
       'text-size': [
-        'interpolate', ['exponential', 2], ['zoom'],
-        14, 1.0,
-        17, 8.0,
-        18, 16.0,
-        19, 32.0,
-        20, 64.0,
-        21, 128.0
+        'interpolate', ['linear'], ['zoom'],
+        14, 2.0,
+        16, 5.0,
+        18, 9.0,
+        19.5, 14.0,
+        21, 20.0
       ] as any,
       'text-anchor': 'center' as const,
       'text-allow-overlap': true,
@@ -88,7 +93,7 @@ export const SELECTED_PLOT_LAYERS = {
     paint: {
       'text-color': '#ffffff',
       'text-halo-color': '#0f172a',
-      'text-halo-width': 2.0
+      'text-halo-width': 1.8
     }
   },
   edgeDimensions: {
@@ -100,13 +105,12 @@ export const SELECTED_PLOT_LAYERS = {
       'text-field': ['get', 'dimensionText'],
       'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
       'text-size': [
-        'interpolate', ['exponential', 2], ['zoom'],
-        14, 0.75,
-        17, 6.0,
-        18, 12.0,
-        19, 24.0,
-        20, 48.0,
-        21, 96.0
+        'interpolate', ['linear'], ['zoom'],
+        14, 1.5,
+        16, 4.0,
+        18, 6.5,
+        19.5, 9.5,
+        21, 13.0
       ] as any,
       'text-rotate': ['get', 'rotationDeg'],
       'text-rotation-alignment': 'map' as const,
@@ -119,7 +123,7 @@ export const SELECTED_PLOT_LAYERS = {
     paint: {
       'text-color': '#ffffff',
       'text-halo-color': '#000000',
-      'text-halo-width': 1.5
+      'text-halo-width': 1.2
     }
   }
 };
@@ -360,8 +364,8 @@ export class MasterPlanPlotService {
     // Responsive padding based on viewport dimensions
     const width = typeof window !== 'undefined' ? window.innerWidth : 1024;
     const padding = width < 768
-      ? { top: 60, bottom: 60, left: 40, right: 40 }
-      : { top: 90, bottom: 90, left: 90, right: 90 };
+      ? { top: 40, bottom: 40, left: 30, right: 30 }
+      : { top: 60, bottom: 60, left: 60, right: 60 };
 
     this.mapInstance.fitBounds(
       [
@@ -370,8 +374,8 @@ export class MasterPlanPlotService {
       ],
       {
         padding,
-        maxZoom: 19.8,
-        duration: 1000,
+        maxZoom: 20.2,
+        duration: 900,
         essential: true
       }
     );
