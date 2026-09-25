@@ -88,7 +88,7 @@ const Y_TOP_COLS_1_5 = 1659.93; // Top of cols 1-5
 const Y_TOP_COLS_6_11 = 1690.93; // Top of cols 6-11
 const Y_TOP_ROAD_NORTH = 1699.93; // North edge of top 9m road
 const X_WEST_BOUNDARY = 26625.30;
-const X_EAST_ENTRY = 26849.77; // East extent ending at right edge of CA Site / Entry
+const X_EAST_ENTRY = 26854.00; // East extent matching reference Image 2 boundary line
 
 const roadFeatures = [];
 const labelFeatures = [];
@@ -150,8 +150,8 @@ labelFeatures.push({
 // 2. Top Horizontal 9 Meter Road
 const top9mCad = [
   [COLUMNS[5].leftX, Y_TOP_COLS_6_11],
-  [COLUMNS[10].rightX, Y_TOP_COLS_6_11],
-  [COLUMNS[10].rightX, Y_TOP_ROAD_NORTH],
+  [COLUMNS[11].leftX, Y_TOP_COLS_6_11],  // 26829.07, 1690.93 (extends to right edge of Ave 6 to join road corridors)
+  [COLUMNS[11].leftX, Y_TOP_ROAD_NORTH], // 26829.07, 1699.93
   [COLUMNS[5].leftX, Y_TOP_ROAD_NORTH],
   [COLUMNS[5].leftX, Y_TOP_COLS_6_11]
 ];
@@ -311,20 +311,21 @@ mergedCadPolygons.forEach((polyRings, polyIdx) => {
 });
 
 // 5. Master Plan Amenities: Parks, CA Site, ENTRY
-// 3 Distinct Park Polygons matching Masterplan Reference & Site Boundaries exactly
+// 3 Distinct Park Polygons matching Masterplan Reference & Yellow Line Boundaries exactly
 const amenities = [
   {
     id: 'PARK_TOP_LEFT',
     name: 'Park',
     type: 'PARK',
     cadPolygon: [
-      [26625.30, Y_TOP_COLS_1_5],              // 26625.30, 1659.93 (West site boundary, top of Cols 1-5)
-      [COLUMNS[4].rightX, Y_TOP_COLS_1_5],     // 26718.07, 1659.93 (stops cleanly at Ave 3)
-      [COLUMNS[4].rightX, Y_TOP_ROAD_NORTH],   // 26718.07, 1699.93 (corner at Ave 3 / Top 9M Road)
-      [26625.30, 1715.00],                     // 26625.30, 1715.00 (West site top boundary corner)
-      [26625.30, Y_TOP_COLS_1_5]
+      [COLUMNS[0].leftX, Y_TOP_COLS_1_5],     // 26638.87, 1659.93 (Starts cleanly at plot 179 left edge)
+      [COLUMNS[4].rightX, Y_TOP_COLS_1_5],    // 26718.07, 1659.93 (stops cleanly at Ave 3 12M Road)
+      [COLUMNS[4].rightX, 1676.00],           // 26718.07, 1676.00 (right corner matching yellow loop)
+      [26678.00, 1684.00],                    // 26678.00, 1684.00 (mid top boundary passing above Park text)
+      [COLUMNS[0].leftX, 1688.00],            // 26638.87, 1688.00 (top-left corner matching yellow loop)
+      [COLUMNS[0].leftX, Y_TOP_COLS_1_5]
     ],
-    labelPos: [26671.68, 1685.00],
+    labelPos: [26678.00, 1672.00],
     rotation: 0
   },
   {
@@ -332,13 +333,14 @@ const amenities = [
     name: 'Park',
     type: 'PARK',
     cadPolygon: [
-      [COLUMNS[5].leftX, Y_TOP_ROAD_NORTH],    // 26730.07, 1699.93 (starts right of Ave 3 / top of 9M road)
-      [COLUMNS[10].rightX, Y_TOP_ROAD_NORTH],  // 26820.07, 1699.93 (stops left of Ave 6 / top of 9M road)
-      [COLUMNS[10].rightX, 1715.00],           // 26820.07, 1715.00 (top boundary corner above Ave 6)
-      [COLUMNS[5].leftX, 1735.00],             // 26730.07, 1735.00 (angled site boundary peak above Ave 3)
+      [COLUMNS[5].leftX, Y_TOP_ROAD_NORTH],   // 26730.07, 1699.93 (starts right of Ave 3 / top of 9M road)
+      [COLUMNS[10].rightX, Y_TOP_ROAD_NORTH], // 26820.07, 1699.93 (stops left of Ave 6 / top of 9M road)
+      [COLUMNS[10].rightX, 1704.00],          // 26820.07, 1704.00 (right end of yellow line above plot 01)
+      [26775.00, 1708.00],                    // 26775.00, 1708.00 (mid yellow line passing above Park text)
+      [COLUMNS[5].leftX, 1715.00],            // 26730.07, 1715.00 (left corner of yellow line on west wall)
       [COLUMNS[5].leftX, Y_TOP_ROAD_NORTH]
     ],
-    labelPos: [26775.07, 1712.00],
+    labelPos: [26775.07, 1704.00],
     rotation: 0
   },
   {
@@ -346,13 +348,13 @@ const amenities = [
     name: 'Park',
     type: 'PARK',
     cadPolygon: [
-      [26829.07, 1630.00],                     // 26829.07, 1630.00 (starts right of Ave 6 / top of CA Site)
-      [26870.67, 1630.00],                     // 26870.67, 1630.00 (East site boundary)
-      [26870.67, 1715.00],                     // 26870.67, 1715.00 (top-right site boundary corner)
-      [26829.07, 1715.00],                     // 26829.07, 1715.00 (top site boundary above Ave 6)
-      [26829.07, 1630.00]
+      [COLUMNS[11].leftX, 1630.00],           // 26829.07, 1630.00 (bottom-left at CA Site top)
+      [26854.00, 1630.00],                    // 26854.00, 1630.00 (bottom-right matching reference Image 2)
+      [26854.00, Y_TOP_ROAD_NORTH],           // 26854.00, 1699.93 (top-right corner matching reference Image 2)
+      [COLUMNS[11].leftX, Y_TOP_ROAD_NORTH],  // 26829.07, 1699.93 (top-left corner at 9M road corner)
+      [COLUMNS[11].leftX, 1630.00]
     ],
-    labelPos: [26849.87, 1672.50],
+    labelPos: [26841.54, 1665.00],
     rotation: 90
   },
   {
@@ -360,13 +362,13 @@ const amenities = [
     name: 'CA Site',
     type: 'CA_SITE',
     cadPolygon: [
-      [26829.07, Y_MID_UPPER],                 // 26829.07, 1513.33
-      [26870.67, Y_MID_UPPER],                 // 26870.67, 1513.33
-      [26870.67, 1630.00],                     // 26870.67, 1630.00
-      [26829.07, 1630.00],                     // 26829.07, 1630.00
-      [26829.07, Y_MID_UPPER]
+      [COLUMNS[11].leftX, Y_MID_UPPER],       // 26829.07, 1513.33
+      [26854.00, Y_MID_UPPER],                // 26854.00, 1513.33
+      [26854.00, 1630.00],                    // 26854.00, 1630.00
+      [COLUMNS[11].leftX, 1630.00],           // 26829.07, 1630.00
+      [COLUMNS[11].leftX, Y_MID_UPPER]
     ],
-    labelPos: [26849.87, 1571.66],
+    labelPos: [26841.54, 1571.66],
     rotation: 90
   },
   {
@@ -374,13 +376,13 @@ const amenities = [
     name: 'ENTRY',
     type: 'ENTRY',
     cadPolygon: [
-      [26837.77, Y_MID_LOWER],                 // 26837.77, 1501.29
-      [26870.67, Y_MID_LOWER],                 // 26870.67, 1501.29
-      [26870.67, Y_MID_UPPER],                 // 26870.67, 1513.33
-      [26837.77, Y_MID_UPPER],                 // 26837.77, 1513.33
-      [26837.77, Y_MID_LOWER]
+      [COLUMNS[11].leftX, Y_MID_LOWER],       // 26829.07, 1501.29
+      [26854.00, Y_MID_LOWER],                // 26854.00, 1501.29
+      [26854.00, Y_MID_UPPER],                // 26854.00, 1513.33
+      [COLUMNS[11].leftX, Y_MID_UPPER],       // 26829.07, 1513.33
+      [COLUMNS[11].leftX, Y_MID_LOWER]
     ],
-    labelPos: [26854.22, 1507.31],
+    labelPos: [26841.54, 1507.31],
     rotation: 0
   }
 ];
