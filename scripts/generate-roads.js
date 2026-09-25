@@ -287,8 +287,100 @@ avenues.forEach(ave => {
   });
 });
 
-// UNION ALL ROAD CORRIDORS INTO ONE CONTINUOUS ROAD SURFACE GEOMETRY
-const mergedCadPolygons = polygonClipping.union(...corridorCadPolygons);
+/**
+ * Generates smooth circular arc corner fillets (curved road corners) for polygon rings
+ */
+function filletPolygonRing(ring, radius = 2.5, numPoints = 6) {
+  const n = ring.length;
+  const isClosed = (ring[0][0] === ring[n - 1][0] && ring[0][1] === ring[n - 1][1]);
+  const len = isClosed ? n - 1 : n;
+  const newRing = [];
+
+  for (let i = 0; i < len; i++) {
+    const prev = ring[(i - 1 + len) % len];
+    const curr = ring[i];
+    const next = ring[(i + 1) % len];
+
+    const v1 = [prev[0] - curr[0], prev[1] - curr[1]];
+    const v2 = [next[0] - curr[0], next[1] - curr[1]];
+    const len1 = Math.hypot(v1[0], v1[1]);
+    const len2 = Math.hypot(v2[0], v2[1]);
+
+    if (len1 < 1e-4 || len2 < 1e-4) {
+      newRing.push(curr);
+      continue;
+    }
+
+    const u1 = [v1[0] / len1, v1[1] / len1];
+    const u2 = [v2[0] / len2, v2[1] / len2];
+
+    const dot = u1[0] * u2[0] + u1[1] * u2[1];
+    const clampedDot = Math.max(-1, Math.min(1, dot));
+    const angle = Math.acos(clampedDot);
+
+    // Fillet 90-degree corners (e.g. angle between 40 deg and 140 deg)
+    if (angle < (40 * Math.PI / 180) || angle > (140 * Math.PI / 180)) {
+      newRing.push(curr);
+      continue;
+    }
+
+    const maxT = Math.min(len1 / 2.5, len2 / 2.5);
+    const halfAngle = angle / 2;
+    const tanHalf = Math.tan((Math.PI - angle) / 2);
+    let T = radius * tanHalf;
+    let R = radius;
+    if (T > maxT) {
+      T = maxT;
+      R = T / tanHalf;
+    }
+
+    const A = [curr[0] + u1[0] * T, curr[1] + u1[1] * T];
+    const B = [curr[0] + u2[0] * T, curr[1] + u2[1] * T];
+
+    const inVec = [-u1[0], -u1[1]];
+    const outVec = [u2[0], u2[1]];
+    const crossZ = inVec[0] * outVec[1] - inVec[1] * outVec[0];
+
+    const bisector = [u1[0] + u2[0], u1[1] + u2[1]];
+    const bisLen = Math.hypot(bisector[0], bisector[1]);
+    if (bisLen < 1e-4) {
+      newRing.push(curr);
+      continue;
+    }
+    const uBis = [bisector[0] / bisLen, bisector[1] / bisLen];
+    const distToCenter = R / Math.sin(halfAngle);
+    const C = [curr[0] + uBis[0] * distToCenter, curr[1] + uBis[1] * distToCenter];
+
+    const startAngle = Math.atan2(A[1] - C[1], A[0] - C[0]);
+    let endAngle = Math.atan2(B[1] - C[1], B[0] - C[0]);
+
+    let sweep = endAngle - startAngle;
+    if (crossZ > 0) {
+      while (sweep < 0) sweep += 2 * Math.PI;
+    } else {
+      while (sweep > 0) sweep -= 2 * Math.PI;
+    }
+
+    for (let k = 0; k <= numPoints; k++) {
+      const frac = k / numPoints;
+      const a = startAngle + sweep * frac;
+      const px = Number((C[0] + R * Math.cos(a)).toFixed(2));
+      const py = Number((C[1] + R * Math.sin(a)).toFixed(2));
+      newRing.push([px, py]);
+    }
+  }
+
+  if (isClosed) {
+    newRing.push(newRing[0]);
+  }
+  return newRing;
+}
+
+// UNION ALL ROAD CORRIDORS INTO ONE CONTINUOUS ROAD SURFACE GEOMETRY WITH CURVED CORNER FILLETS
+const rawMergedCadPolygons = polygonClipping.union(...corridorCadPolygons);
+const mergedCadPolygons = rawMergedCadPolygons.map(polyRings =>
+  polyRings.map(ring => filletPolygonRing(ring, 2.5, 6))
+);
 
 mergedCadPolygons.forEach((polyRings, polyIdx) => {
   const wgsRings = polyRings.map(ring => ring.map(pt => cadToWgs84(pt[0], pt[1])));
