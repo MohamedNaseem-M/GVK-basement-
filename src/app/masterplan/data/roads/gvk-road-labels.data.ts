@@ -8,12 +8,44 @@ export const GVK_ROAD_LABELS_GEOJSON: MasterPlanRoadLabelCollection = {
       "geometry": {
         "type": "Point",
         "coordinates": [
+          76.9000013,
+          15.1264558
+        ]
+      },
+      "properties": {
+        "handle": "LBL_12M_CENTRAL_WEST",
+        "text": "12 Meter Road",
+        "width": "12M",
+        "rotationDeg": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
           76.9007271,
           15.1264558
         ]
       },
       "properties": {
-        "handle": "LBL_12M_CENTRAL",
+        "handle": "LBL_12M_CENTRAL_MID",
+        "text": "12 Meter Road",
+        "width": "12M",
+        "rotationDeg": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          76.9013041,
+          15.1264558
+        ]
+      },
+      "properties": {
+        "handle": "LBL_12M_CENTRAL_EAST",
         "text": "12 Meter Road",
         "width": "12M",
         "rotationDeg": 0
@@ -57,7 +89,7 @@ export const GVK_ROAD_LABELS_GEOJSON: MasterPlanRoadLabelCollection = {
         "type": "Point",
         "coordinates": [
           76.8998652,
-          15.1259908
+          15.1260315
         ]
       },
       "properties": {
@@ -89,7 +121,7 @@ export const GVK_ROAD_LABELS_GEOJSON: MasterPlanRoadLabelCollection = {
         "type": "Point",
         "coordinates": [
           76.9001723,
-          15.125965
+          15.1260057
         ]
       },
       "properties": {
@@ -121,7 +153,7 @@ export const GVK_ROAD_LABELS_GEOJSON: MasterPlanRoadLabelCollection = {
         "type": "Point",
         "coordinates": [
           76.9005045,
-          15.1259372
+          15.1259778
         ]
       },
       "properties": {
@@ -153,7 +185,7 @@ export const GVK_ROAD_LABELS_GEOJSON: MasterPlanRoadLabelCollection = {
         "type": "Point",
         "coordinates": [
           76.9008255,
-          15.1259102
+          15.1259509
         ]
       },
       "properties": {
@@ -185,7 +217,7 @@ export const GVK_ROAD_LABELS_GEOJSON: MasterPlanRoadLabelCollection = {
         "type": "Point",
         "coordinates": [
           76.9011326,
-          15.1258844
+          15.1259251
         ]
       },
       "properties": {
@@ -217,7 +249,7 @@ export const GVK_ROAD_LABELS_GEOJSON: MasterPlanRoadLabelCollection = {
         "type": "Point",
         "coordinates": [
           76.9014397,
-          15.1258586
+          15.1258993
         ]
       },
       "properties": {
@@ -232,39 +264,7 @@ export const GVK_ROAD_LABELS_GEOJSON: MasterPlanRoadLabelCollection = {
       "geometry": {
         "type": "Point",
         "coordinates": [
-          76.9016342,
-          15.1270376
-        ]
-      },
-      "properties": {
-        "handle": "LBL_AVE_EAST_UPPER",
-        "text": "9 Meter Road",
-        "width": "9M",
-        "rotationDeg": 90
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          76.9016342,
-          15.1258423
-        ]
-      },
-      "properties": {
-        "handle": "LBL_AVE_EAST_LOWER",
-        "text": "9 Meter Road",
-        "width": "9M",
-        "rotationDeg": 90
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          76.9000478,
+          76.9000169,
           15.1280624
         ]
       },
@@ -281,8 +281,8 @@ export const GVK_ROAD_LABELS_GEOJSON: MasterPlanRoadLabelCollection = {
       "geometry": {
         "type": "Point",
         "coordinates": [
-          76.9010714,
-          15.1283607
+          76.900979,
+          15.1283065
         ]
       },
       "properties": {
@@ -298,8 +298,8 @@ export const GVK_ROAD_LABELS_GEOJSON: MasterPlanRoadLabelCollection = {
       "geometry": {
         "type": "Point",
         "coordinates": [
-          76.9017694,
-          15.1280172
+          76.9016751,
+          15.1279493
         ]
       },
       "properties": {
@@ -332,7 +332,7 @@ export const GVK_ROAD_LABELS_GEOJSON: MasterPlanRoadLabelCollection = {
       "geometry": {
         "type": "Point",
         "coordinates": [
-          76.9018128,
+          76.9017156,
           15.1264558
         ]
       },
@@ -342,23 +342,6 @@ export const GVK_ROAD_LABELS_GEOJSON: MasterPlanRoadLabelCollection = {
         "width": "ENTRY",
         "isAmenityLabel": true,
         "rotationDeg": 0
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          76.9017694,
-          15.1257568
-        ]
-      },
-      "properties": {
-        "handle": "LBL_PARK_BOTTOM_RIGHT",
-        "text": "Park",
-        "width": "PARK",
-        "isAmenityLabel": true,
-        "rotationDeg": 90
       }
     }
   ]

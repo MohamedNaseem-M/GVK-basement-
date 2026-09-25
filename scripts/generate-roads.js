@@ -1,8 +1,13 @@
 /**
  * GVK Enclave - Authoritative Road Master Plan Reconstruction Script
  * 
- * Reconstructs exact road corridors (9M, 12M), curbs, centerlines, labels,
- * and amenities matching Reference Image 2 and the DXF source data.
+ * Reconstructs exact continuous road corridors (9M, 12M), curbs, centerlines, labels,
+ * and amenities matching Reference Image 2 & 3 and the DXF source data.
+ * Merges overlapping and touching road corridors into one clean, continuous road surface
+ * with zero internal seams or duplicate rectangular road block artifacts.
+ * Corrects Park T-L, Park T-R, Park R-U, CA Site, and Entry geometries to preserve
+ * exact individual park shapes without stretching, merging across avenues, or overlapping road spaces.
+ * 
  * Outputs:
  * - src/app/masterplan/data/roads/gvk-roads.geojson
  * - src/app/masterplan/data/roads/gvk-roads.data.ts
@@ -12,6 +17,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const polygonClipping = require('polygon-clipping');
 
 const DXF_ROAD_PATH = path.resolve(__dirname, '../src/assets/data/dxf-road-extraction.json');
 const DXF_MASTERPLAN_PATH = path.resolve(__dirname, '../src/assets/data/dxf-masterplan-extraction.json');
@@ -64,8 +70,8 @@ const COLUMNS = [
   { col: 8, leftX: 26763.07, rightX: 26775.07, width: 12.00, block: 'Block E' },
   { col: 9, leftX: 26775.07, rightX: 26787.07, width: 12.00, block: 'Block E' },
   { col: 10, leftX: 26796.07, rightX: 26808.07, width: 12.00, block: 'Block F' },
-  { col: 11, leftX: 26808.07, rightX: 26820.07, width: 12.00, block: 'Block F' },
-  { col: 12, leftX: 26829.07, rightX: 26840.97, width: 11.90, block: 'Block G' }
+  { col: 11, leftX: 26808.07, rightX: 26820.07, width: 12.00, block: 'Block F/G' }, // Plots 1-19
+  { col: 12, leftX: 26829.07, rightX: 26840.97, width: 11.90, block: 'Block G' }   // Plots 195-206
 ];
 
 // Southern boundary slope: y = m * x + c
@@ -73,45 +79,47 @@ function southY(x) {
   return Number((-0.172856 * x + 6027.0307).toFixed(2));
 }
 
+// Exact slope angle for southern sloped boundary road: atan(-0.172856) in degrees
+const SOUTH_ROAD_ROTATION_DEG = Number((Math.atan(-0.172856) * 180 / Math.PI).toFixed(2)); // -9.81 deg
+
 const Y_MID_UPPER = 1513.33; // North edge of horizontal 12m road
 const Y_MID_LOWER = 1501.29; // South edge of horizontal 12m road
 const Y_TOP_COLS_1_5 = 1659.93; // Top of cols 1-5
 const Y_TOP_COLS_6_11 = 1690.93; // Top of cols 6-11
 const Y_TOP_ROAD_NORTH = 1699.93; // North edge of top 9m road
 const X_WEST_BOUNDARY = 26625.30;
-const X_EAST_ENTRY = 26870.67;
+const X_EAST_ENTRY = 26849.77; // East extent ending at right edge of CA Site / Entry
 
-// Build road corridor features
 const roadFeatures = [];
 const labelFeatures = [];
 
+// Array of CAD polygons to union for continuous road corridor network
+const corridorCadPolygons = [];
+
 // 1. Central Horizontal 12 Meter Road
 const central12mCad = [
-  [X_WEST_BOUNDARY, Y_MID_LOWER],
+  [COLUMNS[0].leftX, Y_MID_LOWER],
   [X_EAST_ENTRY, Y_MID_LOWER],
   [X_EAST_ENTRY, Y_MID_UPPER],
-  [X_WEST_BOUNDARY, Y_MID_UPPER],
-  [X_WEST_BOUNDARY, Y_MID_LOWER]
+  [COLUMNS[0].leftX, Y_MID_UPPER],
+  [COLUMNS[0].leftX, Y_MID_LOWER]
 ];
+corridorCadPolygons.push([central12mCad]);
 
-roadFeatures.push({
+// Central 12M Road Labels (West, Center, East)
+labelFeatures.push({
   type: 'Feature',
-  id: 'ROAD_12M_CENTRAL',
   geometry: {
-    type: 'Polygon',
-    coordinates: [central12mCad.map(p => cadToWgs84(p[0], p[1]))]
+    type: 'Point',
+    coordinates: cadToWgs84(26670.0, 1507.31)
   },
   properties: {
-    handle: 'ROAD_12M_CENTRAL',
-    roadType: 'PROP_ROAD',
+    handle: 'LBL_12M_CENTRAL_WEST',
+    text: '12 Meter Road',
     width: '12M',
-    label: '12 Meter Road',
-    isCorridor: true,
-    layer: 'PROP_ROAD'
+    rotationDeg: 0
   }
 });
-
-// Central 12M Road Label
 labelFeatures.push({
   type: 'Feature',
   geometry: {
@@ -119,7 +127,20 @@ labelFeatures.push({
     coordinates: cadToWgs84(26748.0, 1507.31)
   },
   properties: {
-    handle: 'LBL_12M_CENTRAL',
+    handle: 'LBL_12M_CENTRAL_MID',
+    text: '12 Meter Road',
+    width: '12M',
+    rotationDeg: 0
+  }
+});
+labelFeatures.push({
+  type: 'Feature',
+  geometry: {
+    type: 'Point',
+    coordinates: cadToWgs84(26810.0, 1507.31)
+  },
+  properties: {
+    handle: 'LBL_12M_CENTRAL_EAST',
     text: '12 Meter Road',
     width: '12M',
     rotationDeg: 0
@@ -134,23 +155,7 @@ const top9mCad = [
   [COLUMNS[5].leftX, Y_TOP_ROAD_NORTH],
   [COLUMNS[5].leftX, Y_TOP_COLS_6_11]
 ];
-
-roadFeatures.push({
-  type: 'Feature',
-  id: 'ROAD_9M_TOP',
-  geometry: {
-    type: 'Polygon',
-    coordinates: [top9mCad.map(p => cadToWgs84(p[0], p[1]))]
-  },
-  properties: {
-    handle: 'ROAD_9M_TOP',
-    roadType: 'ROAD_9MAB',
-    width: '9M',
-    label: '9 Meter Road',
-    isCorridor: true,
-    layer: 'Road_9MAB'
-  }
-});
+corridorCadPolygons.push([top9mCad]);
 
 labelFeatures.push({
   type: 'Feature',
@@ -166,17 +171,8 @@ labelFeatures.push({
   }
 });
 
-// 3. Vertical Avenues
+// 3. Vertical Avenues (Internal Masterplan Roads Only)
 const avenues = [
-  {
-    id: 'AVE_WEST',
-    name: 'West Access Road',
-    leftX: X_WEST_BOUNDARY,
-    rightX: COLUMNS[0].leftX,
-    width: '9M',
-    label: '9 Meter Road',
-    yTop: Y_TOP_COLS_1_5
-  },
   {
     id: 'AVE_1',
     name: 'Avenue 1',
@@ -224,21 +220,12 @@ const avenues = [
   },
   {
     id: 'AVE_6',
-    name: 'Avenue 6',
-    leftX: COLUMNS[10].rightX,
-    rightX: COLUMNS[11].leftX,
+    name: 'Avenue 6 (East 9M Road)',
+    leftX: COLUMNS[10].rightX, // 26820.07 (right edge of Plots 1-19)
+    rightX: COLUMNS[11].leftX,  // 26829.07 (left edge of CA Site & Park)
     width: '9M',
     label: '9 Meter Road',
     yTop: Y_TOP_COLS_6_11
-  },
-  {
-    id: 'AVE_EAST',
-    name: 'East Access Road',
-    leftX: COLUMNS[11].rightX,
-    rightX: 26849.97,
-    width: '9M',
-    label: '9 Meter Road',
-    yTop: 1630.00
   }
 ];
 
@@ -255,44 +242,26 @@ avenues.forEach(ave => {
     [lx, ave.yTop],
     [lx, Y_MID_UPPER]
   ];
+  corridorCadPolygons.push([upperCad]);
 
-  roadFeatures.push({
+  // Upper Label
+  labelFeatures.push({
     type: 'Feature',
-    id: `${ave.id}_UPPER`,
     geometry: {
-      type: 'Polygon',
-      coordinates: [upperCad.map(p => cadToWgs84(p[0], p[1]))]
+      type: 'Point',
+      coordinates: cadToWgs84(cx, (Y_MID_UPPER + ave.yTop) / 2)
     },
     properties: {
-      handle: `${ave.id}_UPPER`,
-      roadType: ave.width === '12M' ? 'PROP_ROAD' : 'ROAD_9MAB',
+      handle: `LBL_${ave.id}_UPPER`,
+      text: ave.label,
       width: ave.width,
-      label: ave.label,
-      isCorridor: true,
-      layer: ave.width === '12M' ? 'PROP_ROAD' : 'Road_9MAB'
+      rotationDeg: 90
     }
   });
 
-  // Upper Label
-  if (ave.id !== 'AVE_WEST') {
-    labelFeatures.push({
-      type: 'Feature',
-      geometry: {
-        type: 'Point',
-        coordinates: cadToWgs84(cx, (Y_MID_UPPER + ave.yTop) / 2)
-      },
-      properties: {
-        handle: `LBL_${ave.id}_UPPER`,
-        text: ave.label,
-        width: ave.width,
-        rotationDeg: 90
-      }
-    });
-  }
-
-  // Lower Corridor
-  const syL = southY(lx) - 9.0;
-  const syR = southY(rx) - 9.0;
+  // Lower Corridor (stops cleanly at southern plot boundary southY(x))
+  const syL = southY(lx);
+  const syR = southY(rx);
   const lowerCad = [
     [lx, syL],
     [rx, syR],
@@ -300,82 +269,62 @@ avenues.forEach(ave => {
     [lx, Y_MID_LOWER],
     [lx, syL]
   ];
-
-  roadFeatures.push({
-    type: 'Feature',
-    id: `${ave.id}_LOWER`,
-    geometry: {
-      type: 'Polygon',
-      coordinates: [lowerCad.map(p => cadToWgs84(p[0], p[1]))]
-    },
-    properties: {
-      handle: `${ave.id}_LOWER`,
-      roadType: ave.width === '12M' ? 'PROP_ROAD' : 'ROAD_9MAB',
-      width: ave.width,
-      label: ave.label,
-      isCorridor: true,
-      layer: ave.width === '12M' ? 'PROP_ROAD' : 'Road_9MAB'
-    }
-  });
+  corridorCadPolygons.push([lowerCad]);
 
   // Lower Label
-  if (ave.id !== 'AVE_WEST') {
-    labelFeatures.push({
-      type: 'Feature',
-      geometry: {
-        type: 'Point',
-        coordinates: cadToWgs84(cx, (Y_MID_LOWER + (syL + syR) / 2) / 2)
-      },
-      properties: {
-        handle: `LBL_${ave.id}_LOWER`,
-        text: ave.label,
-        width: ave.width,
-        rotationDeg: 90
-      }
-    });
-  }
+  labelFeatures.push({
+    type: 'Feature',
+    geometry: {
+      type: 'Point',
+      coordinates: cadToWgs84(cx, (Y_MID_LOWER + (southY(lx) + southY(rx)) / 2) / 2)
+    },
+    properties: {
+      handle: `LBL_${ave.id}_LOWER`,
+      text: ave.label,
+      width: ave.width,
+      rotationDeg: 90
+    }
+  });
 });
 
-// 4. Southern Boundary Corridor
-const southRoadCad = [
-  [X_WEST_BOUNDARY, southY(X_WEST_BOUNDARY) - 9.0],
-  [26849.97, southY(26849.97) - 9.0],
-  [26849.97, southY(26849.97)],
-  [X_WEST_BOUNDARY, southY(X_WEST_BOUNDARY)],
-  [X_WEST_BOUNDARY, southY(X_WEST_BOUNDARY) - 9.0]
-];
+// UNION ALL ROAD CORRIDORS INTO ONE CONTINUOUS ROAD SURFACE GEOMETRY
+const mergedCadPolygons = polygonClipping.union(...corridorCadPolygons);
 
-roadFeatures.push({
-  type: 'Feature',
-  id: 'ROAD_SOUTH_CONNECTION',
-  geometry: {
-    type: 'Polygon',
-    coordinates: [southRoadCad.map(p => cadToWgs84(p[0], p[1]))]
-  },
-  properties: {
-    handle: 'ROAD_SOUTH_CONNECTION',
-    roadType: 'ROAD_9MAB',
-    width: '9M',
-    label: '9 Meter Road',
-    isCorridor: true,
-    layer: 'Road_9MAB'
-  }
+mergedCadPolygons.forEach((polyRings, polyIdx) => {
+  const wgsRings = polyRings.map(ring => ring.map(pt => cadToWgs84(pt[0], pt[1])));
+  roadFeatures.push({
+    type: 'Feature',
+    id: `ROAD_NETWORK_CONTINUOUS_${polyIdx}`,
+    geometry: {
+      type: 'Polygon',
+      coordinates: wgsRings
+    },
+    properties: {
+      handle: `ROAD_NETWORK_CONTINUOUS_${polyIdx}`,
+      roadType: 'PROP_ROAD',
+      width: '12M',
+      label: 'Master Plan Road Corridor',
+      isCorridor: true,
+      layer: 'PROP_ROAD'
+    }
+  });
 });
 
 // 5. Master Plan Amenities: Parks, CA Site, ENTRY
+// 3 Distinct Park Polygons matching Masterplan Reference & Site Boundaries exactly
 const amenities = [
   {
     id: 'PARK_TOP_LEFT',
     name: 'Park',
     type: 'PARK',
     cadPolygon: [
-      [X_WEST_BOUNDARY, Y_TOP_COLS_1_5],
-      [COLUMNS[4].rightX, Y_TOP_COLS_1_5],
-      [26748.00, 1720.00],
-      [X_WEST_BOUNDARY, 1715.00],
-      [X_WEST_BOUNDARY, Y_TOP_COLS_1_5]
+      [26625.30, Y_TOP_COLS_1_5],              // 26625.30, 1659.93 (West site boundary, top of Cols 1-5)
+      [COLUMNS[4].rightX, Y_TOP_COLS_1_5],     // 26718.07, 1659.93 (stops cleanly at Ave 3)
+      [COLUMNS[4].rightX, Y_TOP_ROAD_NORTH],   // 26718.07, 1699.93 (corner at Ave 3 / Top 9M Road)
+      [26625.30, 1715.00],                     // 26625.30, 1715.00 (West site top boundary corner)
+      [26625.30, Y_TOP_COLS_1_5]
     ],
-    labelPos: [26675.0, 1685.0],
+    labelPos: [26671.68, 1685.00],
     rotation: 0
   },
   {
@@ -383,13 +332,13 @@ const amenities = [
     name: 'Park',
     type: 'PARK',
     cadPolygon: [
-      [COLUMNS[5].leftX, Y_TOP_ROAD_NORTH],
-      [COLUMNS[10].rightX, Y_TOP_ROAD_NORTH],
-      [COLUMNS[10].rightX, 1735.00],
-      [26748.00, 1720.00],
+      [COLUMNS[5].leftX, Y_TOP_ROAD_NORTH],    // 26730.07, 1699.93 (starts right of Ave 3 / top of 9M road)
+      [COLUMNS[10].rightX, Y_TOP_ROAD_NORTH],  // 26820.07, 1699.93 (stops left of Ave 6 / top of 9M road)
+      [COLUMNS[10].rightX, 1715.00],           // 26820.07, 1715.00 (top boundary corner above Ave 6)
+      [COLUMNS[5].leftX, 1735.00],             // 26730.07, 1735.00 (angled site boundary peak above Ave 3)
       [COLUMNS[5].leftX, Y_TOP_ROAD_NORTH]
     ],
-    labelPos: [26785.0, 1718.0],
+    labelPos: [26775.07, 1712.00],
     rotation: 0
   },
   {
@@ -397,13 +346,13 @@ const amenities = [
     name: 'Park',
     type: 'PARK',
     cadPolygon: [
-      [26849.97, 1630.00],
-      [X_EAST_ENTRY, 1630.00],
-      [X_EAST_ENTRY, 1730.00],
-      [26849.97, 1735.00],
-      [26849.97, 1630.00]
+      [26829.07, 1630.00],                     // 26829.07, 1630.00 (starts right of Ave 6 / top of CA Site)
+      [26870.67, 1630.00],                     // 26870.67, 1630.00 (East site boundary)
+      [26870.67, 1715.00],                     // 26870.67, 1715.00 (top-right site boundary corner)
+      [26829.07, 1715.00],                     // 26829.07, 1715.00 (top site boundary above Ave 6)
+      [26829.07, 1630.00]
     ],
-    labelPos: [26860.0, 1680.0],
+    labelPos: [26849.87, 1672.50],
     rotation: 90
   },
   {
@@ -411,11 +360,11 @@ const amenities = [
     name: 'CA Site',
     type: 'CA_SITE',
     cadPolygon: [
-      [COLUMNS[11].leftX, Y_MID_UPPER],
-      [X_EAST_ENTRY, Y_MID_UPPER],
-      [X_EAST_ENTRY, 1630.00],
-      [COLUMNS[11].leftX, 1630.00],
-      [COLUMNS[11].leftX, Y_MID_UPPER]
+      [26829.07, Y_MID_UPPER],                 // 26829.07, 1513.33
+      [26870.67, Y_MID_UPPER],                 // 26870.67, 1513.33
+      [26870.67, 1630.00],                     // 26870.67, 1630.00
+      [26829.07, 1630.00],                     // 26829.07, 1630.00
+      [26829.07, Y_MID_UPPER]
     ],
     labelPos: [26849.87, 1571.66],
     rotation: 90
@@ -425,28 +374,14 @@ const amenities = [
     name: 'ENTRY',
     type: 'ENTRY',
     cadPolygon: [
-      [26858.67, Y_MID_LOWER],
-      [X_EAST_ENTRY, Y_MID_LOWER],
-      [X_EAST_ENTRY, Y_MID_UPPER],
-      [26858.67, Y_MID_UPPER],
-      [26858.67, Y_MID_LOWER]
+      [26837.77, Y_MID_LOWER],                 // 26837.77, 1501.29
+      [26870.67, Y_MID_LOWER],                 // 26870.67, 1501.29
+      [26870.67, Y_MID_UPPER],                 // 26870.67, 1513.33
+      [26837.77, Y_MID_UPPER],                 // 26837.77, 1513.33
+      [26837.77, Y_MID_LOWER]
     ],
-    labelPos: [26864.67, 1507.31],
+    labelPos: [26854.22, 1507.31],
     rotation: 0
-  },
-  {
-    id: 'PARK_BOTTOM_RIGHT',
-    name: 'Park',
-    type: 'PARK',
-    cadPolygon: [
-      [26849.97, southY(26849.97)],
-      [X_EAST_ENTRY, southY(26849.97)],
-      [X_EAST_ENTRY, Y_MID_LOWER],
-      [26849.97, Y_MID_LOWER],
-      [26849.97, southY(26849.97)]
-    ],
-    labelPos: [26860.0, 1430.0],
-    rotation: 90
   }
 ];
 
@@ -485,10 +420,16 @@ amenities.forEach(am => {
   });
 });
 
-// Also include the 67 DXF entities from dxf-road-extraction.json
-// transformed to WGS84 so all DXF linework is preserved
+// Process DXF entities if inside masterplan extent
 const rawEntities = dxfRoadData.entities || [];
+const masterplanExtent = [26625.30, 1380.00, 26849.77, 1740.00];
+
 rawEntities.forEach(ent => {
+  const bbox = ent.bbox || [0,0,0,0];
+  const overlapX = Math.max(bbox[0], masterplanExtent[0]) <= Math.min(bbox[2], masterplanExtent[2]);
+  const overlapY = Math.max(bbox[1], masterplanExtent[1]) <= Math.min(bbox[3], masterplanExtent[3]);
+  if (!overlapX || !overlapY) return; // Skip entities outside masterplan area
+
   const pts = ent.vertices || [];
   if (pts.length < 2) return;
   const wgsCoords = pts.map(p => cadToWgs84(p.x, p.y));

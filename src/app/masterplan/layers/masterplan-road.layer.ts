@@ -99,19 +99,31 @@ export const ROAD_LAYERS = {
     id: 'masterplan-road-labels',
     type: 'symbol' as const,
     source: ROAD_LABELS_SOURCE_ID,
-    minzoom: 14.5,
+    minzoom: 10,
     layout: {
       visibility: 'visible' as const,
       'text-field': ['get', 'text'],
       'text-size': [
         'interpolate', ['linear'], ['zoom'],
-        14, 9,
-        16, 11,
-        18, 13,
-        20, 16
+        10, 8,
+        13, 9.5,
+        15, 11,
+        17, 13,
+        19, 15
       ],
+      'text-rotate': ['coalesce', ['get', 'rotationDeg'], 0],
+      'text-rotation-alignment': 'map' as const,
+      'text-pitch-alignment': 'map' as const,
+      'text-keep-upright': true,
       'text-anchor': 'center' as const,
       'text-allow-overlap': false,
+      'text-ignore-placement': false,
+      'text-padding': 2,
+      'symbol-sort-key': [
+        'case',
+        ['==', ['get', 'isAmenityLabel'], true], 1,
+        2
+      ],
       'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold']
     },
     paint: {
