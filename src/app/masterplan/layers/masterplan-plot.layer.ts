@@ -56,25 +56,38 @@ export const PLOT_LAYERS = {
     }
   },
 
-  // 3. Dark Plot Numbers with White Halo centered inside polygon
+  // 3. Dark Bold Plot Numbers with White Contrast Halo matching Reference Photo
   labelsLayer: {
     id: 'masterplan-plots-labels',
     type: 'symbol' as const,
     source: PLOT_SOURCE_ID,
-    minzoom: 16,
+    minzoom: 14.5,
     layout: {
-      'text-field': ['to-string', ['get', 'plotNumber']] as any,
+      'text-field': [
+        'case',
+        ['<', ['get', 'plotNumber'], 10],
+        ['concat', '0', ['to-string', ['get', 'plotNumber']]],
+        ['case',
+          ['<', ['get', 'plotNumber'], 100],
+          ['concat', '0', ['to-string', ['get', 'plotNumber']]],
+          ['to-string', ['get', 'plotNumber']]
+        ]
+      ] as any,
+      'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
       'text-size': [
         'interpolate', ['linear'], ['zoom'],
-        16, 9,
-        17, 10,
-        18, 11,
-        19, 13,
-        21, 16
+        14.5, 9,
+        16, 12,
+        17, 14,
+        18, 17,
+        19, 21,
+        20, 26,
+        21, 32
       ] as any,
       'text-anchor': 'center' as const,
       'text-allow-overlap': false,
-      'text-ignore-placement': false
+      'text-ignore-placement': false,
+      'text-padding': 1
     },
     paint: {
       'text-color': MASTERPLAN_PLOT_STYLES.labelColor,

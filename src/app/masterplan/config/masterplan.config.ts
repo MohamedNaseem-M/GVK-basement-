@@ -63,25 +63,25 @@ export const MASTERPLAN_PLOT_ANCHOR: MasterPlanProjectAnchor = {
 };
 
 export const MASTERPLAN_PLOT_STYLES = {
-  // Warm cream / beige fill for master plan plots
-  fillColor: '#fef3c7',
-  fillOpacity: 0.88,
+  // Clean warm cream / ivory fill matching Reference Photo
+  fillColor: '#fffbe6',
+  fillOpacity: 0.98,
 
-  // Thin dark boundary
-  borderColor: '#334155',
+  // Sharp thin dark boundary
+  borderColor: '#2b2d35',
   borderWidth: 1.2,
-  borderOpacity: 0.95,
+  borderOpacity: 1.0,
 
   // Selected plot highlighting
   selectedFillColor: '#bae6fd',
-  selectedFillOpacity: 0.95,
+  selectedFillOpacity: 0.98,
   selectedBorderColor: '#0284c7',
-  selectedBorderWidth: 2.5,
+  selectedBorderWidth: 2.8,
 
-  // Dark plot number labels with white halo
-  labelColor: '#0f172a',
+  // Bold black plot number labels with white contrast halo
+  labelColor: '#000000',
   labelHaloColor: '#ffffff',
-  labelHaloWidth: 2.5,
-  labelSize: 11
+  labelHaloWidth: 1.5,
+  labelSize: 13
 };
 
