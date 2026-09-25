@@ -195,6 +195,7 @@ export class MapService {
       this.currentPitch.set(pitch);
       this.currentBearing.set(bearing);
       this.is3DMode.set(pitch > 15);
+      this.updateProjectMarkerVisibility();
     });
 
     mapInstance.on('moveend', () => {
@@ -650,6 +651,28 @@ export class MapService {
       .setLngLat([PROJECT_LOCATION.lng, PROJECT_LOCATION.lat])
       .setPopup(popup)
       .addTo(this.map);
+
+    this.updateProjectMarkerVisibility();
+  }
+
+  /**
+   * Updates project location marker pin visibility based on current map zoom level.
+   * Pin is hidden when zoomed in on plot layout (zoom >= 14.5) to keep plots clear,
+   * and becomes visible when zoomed out (zoom < 14.5) to show regional project location pin.
+   */
+  public updateProjectMarkerVisibility(): void {
+    if (!this.projectMarker) return;
+    const markerEl = this.projectMarker.getElement();
+    if (!markerEl) return;
+
+    const isStudio = this.masterPlanRoadService.viewMode() === 'MASTER_PLAN_ONLY';
+    const zoom = this.map ? this.map.getZoom() : 0;
+
+    if (isStudio || zoom >= 14.5) {
+      markerEl.style.display = 'none';
+    } else {
+      markerEl.style.display = 'block';
+    }
   }
 
   /**
@@ -846,13 +869,8 @@ export class MapService {
       }
     });
 
-    // In Studio Canvas mode, hide the project marker pin so it does not block the road master plan
-    if (this.projectMarker) {
-      const markerEl = this.projectMarker.getElement();
-      if (markerEl) {
-        markerEl.style.display = isStudio ? 'none' : 'block';
-      }
-    }
+    // Update project location marker pin visibility based on mode & zoom level
+    this.updateProjectMarkerVisibility();
 
     // Smoothly focus camera on the master plan layout
     this.fitMasterPlanPlots();
