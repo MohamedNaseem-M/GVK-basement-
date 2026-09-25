@@ -56,7 +56,7 @@ export const PLOT_LAYERS = {
     }
   },
 
-  // 3. Dark Bold Plot Numbers with White Contrast Halo matching Reference Photo
+  // 3. Dark Bold Plot Numbers with White Contrast Halo matching Reference Photo (rendering 100% of plot labels)
   labelsLayer: {
     id: 'masterplan-plots-labels',
     type: 'symbol' as const,
@@ -76,18 +76,18 @@ export const PLOT_LAYERS = {
       'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
       'text-size': [
         'interpolate', ['linear'], ['zoom'],
-        14.5, 9,
-        16, 12,
-        17, 14,
-        18, 17,
-        19, 21,
-        20, 26,
-        21, 32
+        14.5, 7.5,
+        16, 9.5,
+        17, 11.5,
+        18, 13.5,
+        19, 16.5,
+        20, 20.0,
+        21, 25.0
       ] as any,
       'text-anchor': 'center' as const,
-      'text-allow-overlap': false,
-      'text-ignore-placement': false,
-      'text-padding': 1
+      'text-allow-overlap': true,
+      'text-ignore-placement': true,
+      'text-padding': 0
     },
     paint: {
       'text-color': MASTERPLAN_PLOT_STYLES.labelColor,
