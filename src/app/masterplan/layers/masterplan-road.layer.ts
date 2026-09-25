@@ -104,13 +104,14 @@ export const ROAD_LAYERS = {
       visibility: 'visible' as const,
       'text-field': ['get', 'text'],
       'text-size': [
-        'interpolate', ['linear'], ['zoom'],
-        10, 8,
-        13, 9.5,
-        15, 11,
-        17, 13,
-        19, 15
-      ],
+        'interpolate', ['exponential', 2], ['zoom'],
+        14, 0.9375,
+        17, 7.5,
+        18, 15.0,
+        19, 30.0,
+        20, 60.0,
+        21, 120.0
+      ] as any,
       'text-rotate': ['coalesce', ['get', 'rotationDeg'], 0],
       'text-rotation-alignment': 'map' as const,
       'text-pitch-alignment': 'map' as const,
@@ -151,7 +152,13 @@ export const ROAD_LAYERS = {
         ],
         '#0f172a'
       ],
-      'text-halo-width': 2.5
+      'text-halo-width': [
+        'interpolate', ['exponential', 2], ['zoom'],
+        15, 0.4,
+        17, 0.8,
+        19, 2.5,
+        21, 5.0
+      ] as any
     }
   }
 };
