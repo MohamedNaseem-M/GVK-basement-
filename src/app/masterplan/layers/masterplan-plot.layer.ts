@@ -61,7 +61,7 @@ export const PLOT_LAYERS = {
     id: 'masterplan-plots-labels',
     type: 'symbol' as const,
     source: PLOT_SOURCE_ID,
-    minzoom: 17.0,
+    minzoom: 15.0,
     layout: {
       'text-field': [
         'case',
@@ -76,16 +76,18 @@ export const PLOT_LAYERS = {
       'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
       'text-size': [
         'interpolate', ['linear'], ['zoom'],
-        17.0, 9.5,
-        18.0, 12.5,
-        19.0, 16.0,
-        20.0, 20.0,
-        21.0, 25.0
+        15.0, 9.0,
+        16.0, 12.0,
+        17.0, 14.5,
+        18.0, 17.5,
+        19.0, 21.5,
+        20.0, 26.0,
+        21.0, 32.0
       ] as any,
       'text-anchor': 'center' as const,
-      'text-allow-overlap': false,
-      'text-ignore-placement': false,
-      'text-padding': 1
+      'text-allow-overlap': true,
+      'text-ignore-placement': true,
+      'text-padding': 0
     },
     paint: {
       'text-color': MASTERPLAN_PLOT_STYLES.labelColor,
