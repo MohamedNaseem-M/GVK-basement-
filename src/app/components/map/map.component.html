@@ -214,48 +214,7 @@
     </button>
   </div>
 
-  <!-- Selected Plot Information Card (Mobile & Desktop) -->
-  @if (masterPlanPlotService.selectedPlot(); as plot) {
-    <div class="plot-info-card" role="dialog" aria-label="Selected Plot Information">
-      <div class="plot-card-header">
-        <div class="plot-card-title-group">
-          <span class="plot-tag">{{ plot.block || 'Residential Plot' }}</span>
-          <h2 class="plot-number">Plot #{{ plot.plotNumber }}</h2>
-        </div>
-        <button
-          type="button"
-          class="plot-card-close-btn"
-          aria-label="Close plot info card"
-          (click)="onDismissPlotCard()"
-        >
-          ✕
-        </button>
-      </div>
 
-      <div class="plot-metrics-grid">
-        <div class="metric-item">
-          <span class="metric-label">Area (Sq.Ft)</span>
-          <span class="metric-value highlight">{{ plot.areaSqFt }} sq.ft</span>
-        </div>
-        <div class="metric-item">
-          <span class="metric-label">Area (Sq.M)</span>
-          <span class="metric-value">{{ plot.areaSqM }} m²</span>
-        </div>
-        @if (plot.dimensions) {
-          <div class="metric-item">
-            <span class="metric-label">Dimensions</span>
-            <span class="metric-value">{{ plot.dimensions }}</span>
-          </div>
-        }
-        @if (plot.status && plot.status !== 'UNKNOWN') {
-          <div class="metric-item">
-            <span class="metric-label">Status</span>
-            <span class="metric-badge status-{{ plot.status.toLowerCase() }}">{{ plot.status }}</span>
-          </div>
-        }
-      </div>
-    </div>
-  }
 
   <!-- Master Plan Layout Verification Badge -->
   <div class="network-badge">

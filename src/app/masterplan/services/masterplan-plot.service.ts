@@ -3,6 +3,7 @@ import * as maplibregl from 'maplibre-gl';
 import { MasterPlanTransformService } from './masterplan-transform.service';
 import { PlotGeometryProcessor } from '../geometry/plot-geometry-processor';
 import {
+  MasterPlanPlotFeature,
   MasterPlanPlotGeoJsonCollection,
   PlotFeatureProperties,
   SelectedPlotInfo
@@ -10,6 +11,109 @@ import {
 import { PLOT_LAYERS, PLOT_SOURCE_ID } from '../layers/masterplan-plot.layer';
 
 import rawDxfMasterplanData from '../../../assets/data/dxf-masterplan-extraction.json';
+
+export const SELECTED_PLOT_SOURCE_ID = 'masterplan-selected-overlay-source';
+
+export const SELECTED_PLOT_LAYERS = {
+  fill: {
+    id: 'masterplan-selected-overlay-fill',
+    type: 'fill' as const,
+    source: SELECTED_PLOT_SOURCE_ID,
+    filter: ['==', ['get', 'type'], 'SURFACE'],
+    paint: {
+      'fill-color': '#1d4ed8',
+      'fill-opacity': 0.94
+    }
+  },
+  border: {
+    id: 'masterplan-selected-overlay-border',
+    type: 'line' as const,
+    source: SELECTED_PLOT_SOURCE_ID,
+    filter: ['==', ['get', 'type'], 'SURFACE'],
+    paint: {
+      'line-color': '#000000',
+      'line-width': 2.0,
+      'line-dasharray': [2, 2]
+    }
+  },
+  cornerTicks: {
+    id: 'masterplan-selected-overlay-corner-ticks',
+    type: 'symbol' as const,
+    source: SELECTED_PLOT_SOURCE_ID,
+    filter: ['==', ['get', 'type'], 'CORNER_TICK'],
+    layout: {
+      'text-field': '+',
+      'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+      'text-size': 14,
+      'text-anchor': 'center' as const,
+      'text-allow-overlap': true,
+      'text-ignore-placement': true
+    },
+    paint: {
+      'text-color': '#ffffff',
+      'text-halo-color': '#000000',
+      'text-halo-width': 1.5
+    }
+  },
+  centerLabel: {
+    id: 'masterplan-selected-overlay-center-label',
+    type: 'symbol' as const,
+    source: SELECTED_PLOT_SOURCE_ID,
+    filter: ['==', ['get', 'type'], 'CENTER_LABEL'],
+    layout: {
+      'text-field': ['get', 'fullLabel'],
+      'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+      'text-size': [
+        'interpolate', ['exponential', 2], ['zoom'],
+        14, 2.5,
+        17, 13,
+        18, 22,
+        19, 44,
+        20, 85
+      ] as any,
+      'text-anchor': 'center' as const,
+      'text-allow-overlap': true,
+      'text-ignore-placement': true,
+      'text-justify': 'center' as const,
+      'text-line-height': 1.2
+    },
+    paint: {
+      'text-color': '#ffffff',
+      'text-halo-color': '#0f172a',
+      'text-halo-width': 2.0
+    }
+  },
+  edgeDimensions: {
+    id: 'masterplan-selected-overlay-edge-dimensions',
+    type: 'symbol' as const,
+    source: SELECTED_PLOT_SOURCE_ID,
+    filter: ['==', ['get', 'type'], 'EDGE_DIMENSION'],
+    layout: {
+      'text-field': ['get', 'dimensionText'],
+      'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+      'text-size': [
+        'interpolate', ['exponential', 2], ['zoom'],
+        14, 1.5,
+        17, 8.5,
+        18, 14,
+        19, 25,
+        20, 48
+      ] as any,
+      'text-rotate': ['get', 'rotationDeg'],
+      'text-rotation-alignment': 'map' as const,
+      'text-pitch-alignment': 'map' as const,
+      'text-keep-upright': true,
+      'text-anchor': 'center' as const,
+      'text-allow-overlap': true,
+      'text-ignore-placement': true
+    },
+    paint: {
+      'text-color': '#ffffff',
+      'text-halo-color': '#000000',
+      'text-halo-width': 2.5
+    }
+  }
+};
 
 @Injectable({
   providedIn: 'root'
@@ -55,7 +159,6 @@ export class MasterPlanPlotService {
       // Retain the exact mathematical CAD reconstruction already initialized
     }
   }
-
 
   /**
    * Returns authoritative WGS84 GeoJSON FeatureCollection of 318 residential plots
@@ -103,10 +206,34 @@ export class MasterPlanPlotService {
       if (!map.getLayer(PLOT_LAYERS.labelsLayer.id)) {
         map.addLayer(PLOT_LAYERS.labelsLayer as any);
       }
-
-      // Setup interaction handlers
-      this.setupPlotInteractions(map);
     }
+
+    // 5. Add Selection Overlay Source & Layers for Image 2 on-map interactive plot selection
+    if (!map.getSource(SELECTED_PLOT_SOURCE_ID)) {
+      map.addSource(SELECTED_PLOT_SOURCE_ID, {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] }
+      });
+
+      if (!map.getLayer(SELECTED_PLOT_LAYERS.fill.id)) {
+        map.addLayer(SELECTED_PLOT_LAYERS.fill as any);
+      }
+      if (!map.getLayer(SELECTED_PLOT_LAYERS.border.id)) {
+        map.addLayer(SELECTED_PLOT_LAYERS.border as any);
+      }
+      if (!map.getLayer(SELECTED_PLOT_LAYERS.cornerTicks.id)) {
+        map.addLayer(SELECTED_PLOT_LAYERS.cornerTicks as any);
+      }
+      if (!map.getLayer(SELECTED_PLOT_LAYERS.centerLabel.id)) {
+        map.addLayer(SELECTED_PLOT_LAYERS.centerLabel as any);
+      }
+      if (!map.getLayer(SELECTED_PLOT_LAYERS.edgeDimensions.id)) {
+        map.addLayer(SELECTED_PLOT_LAYERS.edgeDimensions as any);
+      }
+    }
+
+    // Setup interaction handlers
+    this.setupPlotInteractions(map);
   }
 
   /**
@@ -148,7 +275,7 @@ export class MasterPlanPlotService {
   }
 
   /**
-   * Selects a plot by its number and updates MapLibre feature state for visual highlight
+   * Selects a plot by its number and updates MapLibre feature state & overlay layers
    */
   public selectPlot(plotNumber: number | null, properties?: any): void {
     const currentSelectedId = this.selectedPlotId();
@@ -160,27 +287,19 @@ export class MasterPlanPlotService {
           { source: PLOT_SOURCE_ID, id: currentSelectedId },
           { selected: false }
         );
-      } catch (err) {
-        // Feature state safety catch
-      }
+      } catch (err) {}
     }
 
     if (plotNumber === null) {
       this.selectedPlot.set(null);
       this.selectedPlotId.set(null);
+      this.updateSelectionOverlay(null);
       return;
     }
 
-    // If properties were not provided, find them in the dataset
-    let props = properties;
-    if (!props) {
-      const feature = this.plotsDataset.features.find(f => f.properties.plotNumber === plotNumber);
-      if (feature) {
-        props = feature.properties;
-      }
-    }
-
-    if (props) {
+    const feature = this.plotsDataset.features.find(f => f.properties.plotNumber === plotNumber);
+    if (feature) {
+      const props = feature.properties;
       const info: SelectedPlotInfo = {
         plotNumber: Number(props.plotNumber),
         block: props.block || '',
@@ -201,11 +320,131 @@ export class MasterPlanPlotService {
             { source: PLOT_SOURCE_ID, id: plotNumber },
             { selected: true }
           );
-        } catch (err) {
-          // Feature state safety catch
-        }
+        } catch (err) {}
       }
+
+      this.updateSelectionOverlay(feature);
     }
+  }
+
+  /**
+   * Updates the selected plot GeoJSON overlay source
+   */
+  private updateSelectionOverlay(feature: MasterPlanPlotFeature | null): void {
+    if (!this.mapInstance) return;
+    const source = this.mapInstance.getSource(SELECTED_PLOT_SOURCE_ID) as maplibregl.GeoJSONSource;
+    if (!source) return;
+
+    if (!feature) {
+      source.setData({ type: 'FeatureCollection', features: [] });
+      return;
+    }
+
+    const geojson = this.generateSelectedPlotOverlayGeoJson(feature);
+    source.setData(geojson as any);
+  }
+
+  /**
+   * Generates the multi-feature GeoJSON collection for the selected plot (Image 2 style)
+   */
+  private generateSelectedPlotOverlayGeoJson(feature: MasterPlanPlotFeature): any {
+    if (!feature || !feature.geometry || !feature.geometry.coordinates) {
+      return { type: 'FeatureCollection', features: [] };
+    }
+
+    const ring = feature.geometry.coordinates[0];
+    const props = feature.properties;
+    const plotNumber = props.plotNumber;
+    const areaSqM = props.areaSqM;
+    const areaSqFt = props.areaSqFt;
+    const areaSqFtFormatted = Number(areaSqFt).toLocaleString('en-US');
+
+    // 1. Surface polygon feature
+    const surfaceFeature = {
+      type: 'Feature',
+      geometry: feature.geometry,
+      properties: { type: 'SURFACE' }
+    };
+
+    // 2. Centroid Center Multi-line Label Feature
+    let sumLng = 0, sumLat = 0;
+    const n = ring.length - 1; // Exclude duplicate last closure point
+    for (let i = 0; i < n; i++) {
+      sumLng += ring[i][0];
+      sumLat += ring[i][1];
+    }
+    const centroidLng = sumLng / n;
+    const centroidLat = sumLat / n;
+
+    const fullLabel = `${plotNumber}\n${areaSqM} m²\n${areaSqFtFormatted} ft²`;
+
+    const centerLabelFeature = {
+      type: 'Feature',
+      geometry: {
+        type: 'Point',
+        coordinates: [centroidLng, centroidLat]
+      },
+      properties: {
+        type: 'CENTER_LABEL',
+        fullLabel
+      }
+    };
+
+    // 3. Corner Ticks
+    const cornerFeatures = ring.slice(0, n).map((pt: any) => ({
+      type: 'Feature',
+      geometry: {
+        type: 'Point',
+        coordinates: pt
+      },
+      properties: { type: 'CORNER_TICK' }
+    }));
+
+    // 4. Edge Dimension Badges along the 4 edges
+    const edgeFeatures: any[] = [];
+    for (let i = 0; i < n; i++) {
+      const p1 = ring[i];
+      const p2 = ring[i + 1] || ring[0];
+
+      const midLng = (p1[0] + p2[0]) / 2;
+      const midLat = (p1[1] + p2[1]) / 2;
+
+      // Geodesic distance in meters
+      const R = 6371000;
+      const dLat = (p2[1] - p1[1]) * Math.PI / 180;
+      const dLng = (p2[0] - p1[0]) * Math.PI / 180;
+      const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(p1[1] * Math.PI / 180) * Math.cos(p2[1] * Math.PI / 180) *
+                Math.sin(dLng / 2) * Math.sin(dLng / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      const distM = Math.round(R * c);
+
+      // Angle calculation
+      const dy = p2[1] - p1[1];
+      const dx = (p2[0] - p1[0]) * Math.cos(p1[1] * Math.PI / 180);
+      let angleDeg = Math.atan2(dy, dx) * 180 / Math.PI;
+      if (angleDeg > 90 || angleDeg < -90) {
+        angleDeg += 180;
+      }
+
+      edgeFeatures.push({
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: [midLng, midLat]
+        },
+        properties: {
+          type: 'EDGE_DIMENSION',
+          dimensionText: `${distM} m`,
+          rotationDeg: -angleDeg
+        }
+      });
+    }
+
+    return {
+      type: 'FeatureCollection',
+      features: [surfaceFeature, centerLabelFeature, ...cornerFeatures, ...edgeFeatures]
+    };
   }
 
   /**
