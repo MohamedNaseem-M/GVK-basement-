@@ -175,8 +175,8 @@ export class MapService {
         this.initDynamicPoiLayer();
         this.fetchDynamicPOIs();
 
-        // Automatically frame the master plan 318-plot layout over real project site
-        this.fitMasterPlanPlots();
+        // Automatically frame the master plan layout dynamically over real project site
+        this.fitMasterPlanBounds();
 
         // If map tiles are already rendered at load time, mark ready
         if (mapInstance.areTilesLoaded()) {
@@ -664,12 +664,77 @@ export class MapService {
   }
 
   /**
+   * Computes geographic bounding box [minLng, minLat, maxLng, maxLat] covering entire masterplan
+   * (plots, roads, parks, CA Site, Entry)
+   */
+  public getCombinedMasterPlanBbox(): [number, number, number, number] {
+    const roadBbox = this.masterPlanRoadService.getWgs84Bbox();
+    const plotBbox = this.masterPlanPlotService.getWgs84Bbox();
+    return [
+      Math.min(roadBbox[0], plotBbox[0]),
+      Math.min(roadBbox[1], plotBbox[1]),
+      Math.max(roadBbox[2], plotBbox[2]),
+      Math.max(roadBbox[3], plotBbox[3])
+    ];
+  }
+
+  /**
+   * Returns optimized responsive padding based on current viewport dimensions.
+   * Gives maximum usable screen space for the masterplan on mobile devices while preserving
+   * clean professional margins on desktop.
+   */
+  public getResponsiveFitPadding(): maplibregl.PaddingOptions {
+    const width = typeof window !== 'undefined' ? window.innerWidth : 1024;
+    const height = typeof window !== 'undefined' ? window.innerHeight : 768;
+
+    if (width < 768) {
+      // Mobile portrait / small screens: tight side margins so masterplan dominates the screen width
+      return { top: 30, bottom: 35, left: 15, right: 15 };
+    } else if (width < 1024) {
+      // Tablet screens
+      return { top: 35, bottom: 40, left: 30, right: 30 };
+    } else {
+      // Desktop screens: clean, professional margins
+      return { top: 40, bottom: 45, left: 45, right: 45 };
+    }
+  }
+
+  /**
+   * Fits map camera dynamically to the entire Master Plan extent (plots, roads, parks, CA site, entry)
+   * using responsive framing options.
+   */
+  public fitMasterPlanBounds(options?: { animate?: boolean }): void {
+    if (!this.map || !this.isMapLoaded()) return;
+    const bbox = this.getCombinedMasterPlanBbox();
+    const padding = this.getResponsiveFitPadding();
+    const targetPitch = this.is3DMode() ? CAMERA_PRESETS.view3D.pitch : 0;
+    const targetBearing = this.is3DMode() ? CAMERA_PRESETS.view3D.bearing : 0;
+
+    this.map.fitBounds(
+      [
+        [bbox[0], bbox[1]],
+        [bbox[2], bbox[3]]
+      ],
+      {
+        padding,
+        pitch: targetPitch,
+        bearing: targetBearing,
+        maxZoom: 19.8,
+        duration: options?.animate === false ? 0 : 1200,
+        essential: true
+      }
+    );
+  }
+
+  /**
    * Smoothly animates camera to 2D top-down view
    */
   public set2DView(): void {
     if (!this.map) return;
     this.map.dragPan.enable();
+    const center: [number, number] = [PROJECT_LOCATION.lng, PROJECT_LOCATION.lat];
     this.map.easeTo({
+      center,
       pitch: CAMERA_PRESETS.view2D.pitch,
       bearing: CAMERA_PRESETS.view2D.bearing,
       zoom: CAMERA_PRESETS.view2D.zoom,
@@ -682,8 +747,9 @@ export class MapService {
    */
   public set3DView(): void {
     if (!this.map) return;
+    const center: [number, number] = [PROJECT_LOCATION.lng, PROJECT_LOCATION.lat];
     this.map.easeTo({
-      center: [76.9008446, 15.1266426],
+      center,
       pitch: CAMERA_PRESETS.view3D.pitch,
       bearing: CAMERA_PRESETS.view3D.bearing,
       zoom: CAMERA_PRESETS.view3D.zoom,
@@ -696,18 +762,7 @@ export class MapService {
    */
   public flyToProjectLocation(): void {
     if (!this.map) return;
-    const targetPitch = this.is3DMode() ? CAMERA_PRESETS.view3D.pitch : 0;
-    const targetBearing = this.is3DMode() ? CAMERA_PRESETS.view3D.bearing : 0;
-    const targetZoom = this.is3DMode() ? CAMERA_PRESETS.view3D.zoom : CAMERA_PRESETS.view2D.zoom;
-
-    this.map.flyTo({
-      center: [76.9008446, 15.1266426],
-      zoom: targetZoom,
-      pitch: targetPitch,
-      bearing: targetBearing,
-      duration: 1500,
-      essential: true
-    });
+    this.fitMasterPlanBounds({ animate: true });
   }
 
   public zoomIn(): void {
@@ -739,21 +794,7 @@ export class MapService {
    * Fits map camera tightly to the Master Plan road network extent
    */
   public fitMasterPlanRoads(): void {
-    if (!this.map || !this.isMapLoaded()) return;
-    const [minLng, minLat, maxLng, maxLat] = this.masterPlanRoadService.getWgs84Bbox();
-
-    this.map.fitBounds(
-      [
-        [minLng, minLat],
-        [maxLng, maxLat]
-      ],
-      {
-        padding: 90,
-        maxZoom: 19.5,
-        duration: 1400,
-        essential: true
-      }
-    );
+    this.fitMasterPlanBounds();
   }
 
   /**
@@ -764,20 +805,7 @@ export class MapService {
   }
 
   public fitMasterPlanPlots(): void {
-    if (!this.map || !this.isMapLoaded()) return;
-    const [minLng, minLat, maxLng, maxLat] = this.masterPlanPlotService.getWgs84Bbox();
-    this.map.fitBounds(
-      [
-        [minLng, minLat],
-        [maxLng, maxLat]
-      ],
-      {
-        padding: 80,
-        maxZoom: 19.5,
-        duration: 1400,
-        essential: true
-      }
-    );
+    this.fitMasterPlanBounds();
   }
 
   /**
