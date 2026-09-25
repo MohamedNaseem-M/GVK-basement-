@@ -54,6 +54,8 @@ export const SELECTED_PLOT_LAYERS = {
         21, 32.0
       ] as any,
       'text-anchor': 'center' as const,
+      'text-pitch-alignment': 'map' as const,
+      'text-rotation-alignment': 'map' as const,
       'text-allow-overlap': true,
       'text-ignore-placement': true
     },
@@ -88,6 +90,8 @@ export const SELECTED_PLOT_LAYERS = {
         21, 64.0
       ] as any,
       'text-anchor': 'center' as const,
+      'text-pitch-alignment': 'map' as const,
+      'text-rotation-alignment': 'map' as const,
       'text-allow-overlap': true,
       'text-ignore-placement': true,
       'text-justify': 'center' as const,

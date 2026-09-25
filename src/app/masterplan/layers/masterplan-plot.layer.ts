@@ -84,6 +84,8 @@ export const PLOT_LAYERS = {
         21, 160.0
       ] as any,
       'text-anchor': 'center' as const,
+      'text-pitch-alignment': 'map' as const,
+      'text-rotation-alignment': 'map' as const,
       'text-allow-overlap': true,
       'text-ignore-placement': true,
       'text-padding': 0
