@@ -156,8 +156,8 @@ export class MapService {
       // Track map load event and add project marker & POI layer
       mapInstance.on('load', () => {
         this.isMapLoaded.set(true);
-        this.loadingMessage.set('Loading Viewport Tiles & Road Overlays...');
-        this.loadingProgress.set(70);
+        this.loadingMessage.set('Loading Master Plan & Road Overlays...');
+        this.loadingProgress.set(90);
 
         // Deep tile pyramid retention tuning for continuous raster coverage
         const style = (mapInstance as any).style;
@@ -173,15 +173,17 @@ export class MapService {
         this.masterPlanRoadService.attachRoadLayersToMap(mapInstance);
         this.masterPlanPlotService.attachPlotLayersToMap(mapInstance);
         this.initDynamicPoiLayer();
-        this.fetchDynamicPOIs();
 
         // Automatically frame the master plan layout dynamically over real project site
         this.fitMasterPlanBounds();
 
-        // If map tiles are already rendered at load time, mark ready
-        if (mapInstance.areTilesLoaded()) {
+        // Mark map ready ultra-fast so loading overlay completes in ~200ms
+        setTimeout(() => {
           markMapAsReady();
-        }
+        }, 200);
+
+        // Asynchronously fetch non-blocking background POIs
+        this.fetchDynamicPOIs();
       });
 
     // Track real-time map camera movements & fetch POIs on viewport move

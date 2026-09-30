@@ -12,6 +12,8 @@ import { PLOT_LAYERS, PLOT_SOURCE_ID } from '../layers/masterplan-plot.layer';
 
 import rawDxfMasterplanData from '../../../assets/data/dxf-masterplan-extraction.json';
 
+import { GVK_PLOTS_GEOJSON } from '../data/plots/gvk-plots.data';
+
 export const SELECTED_PLOT_SOURCE_ID = 'masterplan-selected-overlay-source';
 
 export const SELECTED_PLOT_LAYERS = {
@@ -142,11 +144,8 @@ export const SELECTED_PLOT_LAYERS = {
 export class MasterPlanPlotService {
   private readonly transformService = inject(MasterPlanTransformService);
 
-  // Authoritative runtime dataset reconstructed via CAD topology and synchronized with gvk-plots.geojson
-  private plotsDataset: MasterPlanPlotGeoJsonCollection = PlotGeometryProcessor.toGeoJson(
-    PlotGeometryProcessor.reconstructCadPlots(rawDxfMasterplanData),
-    (x, y) => this.transformService.cadPlotToWgs84(x, y)
-  );
+  // Authoritative runtime dataset statically bundled for instant 0ms rendering
+  private plotsDataset: MasterPlanPlotGeoJsonCollection = GVK_PLOTS_GEOJSON;
 
   // Reactive state signals
   public readonly isPlotsLoaded: WritableSignal<boolean> = signal(true);
@@ -156,30 +155,6 @@ export class MasterPlanPlotService {
 
   // Reference to active map instance for feature-state manipulation
   private mapInstance: maplibregl.Map | null = null;
-
-  constructor() {
-    this.syncAuthoritativeGeoJson();
-  }
-
-  /**
-   * Attempts to fetch the static gvk-plots.geojson artifact to ensure exact alignment
-   */
-  private async syncAuthoritativeGeoJson(): Promise<void> {
-    try {
-      const response = await fetch('data/plots/gvk-plots.geojson?v=2');
-      if (response.ok) {
-        const json = await response.json();
-        if (json && json.features && json.features.length === 318) {
-          this.plotsDataset = json;
-          if (this.mapInstance && this.mapInstance.getSource(PLOT_SOURCE_ID)) {
-            (this.mapInstance.getSource(PLOT_SOURCE_ID) as maplibregl.GeoJSONSource).setData(this.plotsDataset as any);
-          }
-        }
-      }
-    } catch {
-      // Retain the exact mathematical CAD reconstruction already initialized
-    }
-  }
 
   /**
    * Returns authoritative WGS84 GeoJSON FeatureCollection of 318 residential plots
