@@ -90,7 +90,7 @@ export class MasterPlanRoadService {
    * Computes geographic bounding box [minLng, minLat, maxLng, maxLat] for camera fitting
    */
   public getWgs84Bbox(): [number, number, number, number] {
-    return [76.8995853, 15.1252762, 76.9018687, 15.1285144];
+    return [76.8997116, 15.1253717, 76.9017135, 15.1283336];
   }
 
   /**

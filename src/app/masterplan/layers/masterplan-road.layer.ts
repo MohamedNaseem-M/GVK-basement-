@@ -1,8 +1,9 @@
-import { MASTERPLAN_ROAD_STYLES } from '../config/masterplan.config';
+import { MASTERPLAN_ROAD_STYLES, MASTERPLAN_AMENITY_STYLES } from '../config/masterplan.config';
 
 /**
- * MapLibre layer definitions for rendering the Road Master Plan
- * with professional real-estate aesthetics (dark asphalt surface, subtle curb edges, clean typography).
+ * MapLibre layer definitions for rendering the Road Master Plan & Amenities
+ * with professional real-estate aesthetics (dark asphalt surface, subtle curb edges, clean typography,
+ * vibrant green parks, sand CA Site, blue ENTRY gate).
  */
 export const ROAD_SOURCE_ID = 'masterplan-road-source';
 export const ROAD_LABELS_SOURCE_ID = 'masterplan-road-labels-source';
@@ -60,12 +61,12 @@ export const ROAD_LAYERS = {
       'fill-color': [
         'match',
         ['get', 'amenityType'],
-        'PARK', '#4d7c0f',
-        'CA_SITE', '#d6c7a1',
-        'ENTRY', '#7dd3fc',
+        'PARK', MASTERPLAN_AMENITY_STYLES.parkFill,
+        'CA_SITE', MASTERPLAN_AMENITY_STYLES.caSiteFill,
+        'ENTRY', MASTERPLAN_AMENITY_STYLES.entryFill,
         '#334155'
       ],
-      'fill-opacity': 0.92
+      'fill-opacity': 0.98
     }
   },
 
@@ -84,17 +85,17 @@ export const ROAD_LAYERS = {
       'line-color': [
         'match',
         ['get', 'amenityType'],
-        'PARK', '#365314',
-        'CA_SITE', '#475569',
-        'ENTRY', '#0284c7',
+        'PARK', MASTERPLAN_AMENITY_STYLES.parkBorder,
+        'CA_SITE', MASTERPLAN_AMENITY_STYLES.caSiteBorder,
+        'ENTRY', MASTERPLAN_AMENITY_STYLES.entryBorder,
         '#334155'
       ],
-      'line-width': 1.5,
-      'line-opacity': 0.95
+      'line-width': 2.2,
+      'line-opacity': 0.98
     }
   },
 
-  // 5. Road Width & Amenity Text Callouts (9 Meter Road, 12 Meter Road, Park, CA Site, ENTRY)
+  // 5. Road Width & Amenity Text Callouts (9 Meter Road, 12 Meter Road, PARK, CA Site, ENTRY)
   labelsLayer: {
     id: 'masterplan-road-labels',
     type: 'symbol' as const,
@@ -117,15 +118,15 @@ export const ROAD_LAYERS = {
       'text-pitch-alignment': 'map' as const,
       'text-keep-upright': true,
       'text-anchor': 'center' as const,
-      'text-allow-overlap': false,
-      'text-ignore-placement': false,
-      'text-padding': 2,
+      'text-allow-overlap': true,
+      'text-ignore-placement': true,
+      'text-padding': 0,
       'symbol-sort-key': [
         'case',
         ['==', ['get', 'isAmenityLabel'], true], 1,
         2
       ],
-      'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold']
+      'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold']
     },
     paint: {
       'text-color': [
@@ -135,7 +136,8 @@ export const ROAD_LAYERS = {
           'match',
           ['get', 'width'],
           'CA_SITE', '#1e293b',
-          'ENTRY', '#0369a1',
+          'ENTRY', '#ffffff',
+          'PARK', '#ffffff',
           '#ffffff'
         ],
         '#ffffff'
@@ -147,17 +149,18 @@ export const ROAD_LAYERS = {
           'match',
           ['get', 'width'],
           'CA_SITE', '#fef3c7',
-          'ENTRY', '#e0f2fe',
-          '#1e293b'
+          'ENTRY', '#0284c7',
+          'PARK', '#14532d',
+          '#0f172a'
         ],
         '#0f172a'
       ],
       'text-halo-width': [
         'interpolate', ['exponential', 2], ['zoom'],
-        15, 0.4,
-        17, 0.8,
-        19, 2.5,
-        21, 5.0
+        15, 0.5,
+        17, 1.2,
+        19, 2.8,
+        21, 5.5
       ] as any
     }
   }

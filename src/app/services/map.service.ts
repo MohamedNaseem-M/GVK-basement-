@@ -708,17 +708,16 @@ export class MapService {
    */
   public getResponsiveFitPadding(): maplibregl.PaddingOptions {
     const width = typeof window !== 'undefined' ? window.innerWidth : 1024;
-    const height = typeof window !== 'undefined' ? window.innerHeight : 768;
 
-    if (width < 768) {
-      // Mobile portrait / small screens: subtle tighter padding for ~10-15% visual boost
-      return { top: 20, bottom: 25, left: 10, right: 10 };
+    if (width < 640) {
+      // Mobile portrait screens: tight padding fitting between top header card & bottom UI controls
+      return { top: 64, bottom: 36, left: 10, right: 10 };
     } else if (width < 1024) {
       // Tablet screens
-      return { top: 25, bottom: 30, left: 20, right: 20 };
+      return { top: 35, bottom: 25, left: 16, right: 16 };
     } else {
-      // Desktop screens: clean, professional 10-15% larger framing
-      return { top: 30, bottom: 35, left: 30, right: 30 };
+      // Desktop screens: clean, tight safe framing
+      return { top: 24, bottom: 20, left: 16, right: 16 };
     }
   }
 
@@ -742,7 +741,6 @@ export class MapService {
         padding,
         pitch: targetPitch,
         bearing: targetBearing,
-        maxZoom: 19.8,
         duration: options?.animate === false ? 0 : 1200,
         essential: true
       }
@@ -750,34 +748,22 @@ export class MapService {
   }
 
   /**
-   * Smoothly animates camera to 2D top-down view
+   * Smoothly animates camera to 2D top-down view with optimal masterplan framing
    */
   public set2DView(): void {
     if (!this.map) return;
     this.map.dragPan.enable();
-    const center: [number, number] = [PROJECT_LOCATION.lng, PROJECT_LOCATION.lat];
-    this.map.easeTo({
-      center,
-      pitch: CAMERA_PRESETS.view2D.pitch,
-      bearing: CAMERA_PRESETS.view2D.bearing,
-      zoom: CAMERA_PRESETS.view2D.zoom,
-      duration: 1200
-    });
+    this.is3DMode.set(false);
+    this.fitMasterPlanBounds({ animate: true });
   }
 
   /**
-   * Smoothly animates camera to 3D perspective view
+   * Smoothly animates camera to 3D perspective view with optimal masterplan framing
    */
   public set3DView(): void {
     if (!this.map) return;
-    const center: [number, number] = [PROJECT_LOCATION.lng, PROJECT_LOCATION.lat];
-    this.map.easeTo({
-      center,
-      pitch: CAMERA_PRESETS.view3D.pitch,
-      bearing: CAMERA_PRESETS.view3D.bearing,
-      zoom: CAMERA_PRESETS.view3D.zoom,
-      duration: 1200
-    });
+    this.is3DMode.set(true);
+    this.fitMasterPlanBounds({ animate: true });
   }
 
   /**

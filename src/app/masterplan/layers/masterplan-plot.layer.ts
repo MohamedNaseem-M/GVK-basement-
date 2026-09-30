@@ -76,12 +76,12 @@ export const PLOT_LAYERS = {
       'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
       'text-size': [
         'interpolate', ['exponential', 2], ['zoom'],
-        14, 1.25,
-        17, 10.0,
-        18, 20.0,
-        19, 40.0,
-        20, 80.0,
-        21, 160.0
+        14, 0.85,
+        17, 6.8,
+        18, 13.6,
+        19, 27.2,
+        20, 54.4,
+        21, 108.8
       ] as any,
       'text-anchor': 'center' as const,
       'text-pitch-alignment': 'map' as const,
@@ -95,10 +95,10 @@ export const PLOT_LAYERS = {
       'text-halo-color': MASTERPLAN_PLOT_STYLES.labelHaloColor,
       'text-halo-width': [
         'interpolate', ['exponential', 2], ['zoom'],
-        15, 0.5,
-        17, 1.0,
-        19, 2.5,
-        21, 5.0
+        15, 0.3,
+        17, 0.7,
+        19, 1.6,
+        21, 3.5
       ] as any,
       'text-opacity': [
         'case',

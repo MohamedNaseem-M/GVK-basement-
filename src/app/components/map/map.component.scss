@@ -76,7 +76,7 @@
   background: rgba(16, 185, 129, 0.15);
   border: 1px solid rgba(16, 185, 129, 0.3);
   border-radius: 20px;
-  padding: 2px 8px;
+  padding: 3px 10px;
   width: fit-content;
 }
 
@@ -95,6 +95,13 @@
   color: #34d399;
   letter-spacing: 0.5px;
   text-transform: uppercase;
+
+  &.highlight {
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.2);
+    border-radius: 10px;
+    padding: 1px 6px;
+  }
 }
 
 /* Master Plan View Mode Switcher */
@@ -209,6 +216,21 @@
       background: rgba(2, 132, 199, 0.25);
       border-color: #38bdf8;
     }
+  }
+}
+
+.compass-rose-widget {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.45));
+
+  svg {
+    width: 44px;
+    height: 44px;
   }
 }
 
