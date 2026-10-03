@@ -27,13 +27,13 @@ export const MASTERPLAN_ANCHOR: MasterPlanProjectAnchor = {
 };
 
 export const MASTERPLAN_ROAD_STYLES = {
-  // Professional real-estate master plan aesthetics (matching reference design)
-  asphaltSurfaceColor: '#181e29', // Deep charcoal / dark slate asphalt
+  // Deep charcoal with subtle blue/navy undertone matching IMAGE 2
+  asphaltSurfaceColor: '#171d28',
   asphaltOpacity: 0.98,
-  curbBorderColor: '#64748b',    // Crisp light curb border
+  curbBorderColor: '#cbd5e1',    // Crisp light gray/silver curb border
   curbBorderWidth: 3.5,
   curbBorderOpacity: 0.98,
-  centerlineColor: '#cbd5e1',    // Dashed pavement divider line
+  centerlineColor: '#cbd5e1',
   centerlineWidth: 1.5,
   centerlineOpacity: 0.85,
   labelColor: '#ffffff',
@@ -63,13 +63,13 @@ export const MASTERPLAN_PLOT_ANCHOR: MasterPlanProjectAnchor = {
 };
 
 export const MASTERPLAN_PLOT_STYLES = {
-  // Warm light cream / beige plot fill matching reference image (Option 1: Premium)
-  fillColor: '#fdf3df',
+  // Warm cream / golden-beige tone matching IMAGE 2 (Target Masterplan Color)
+  fillColor: '#fdf3e3',
   fillOpacity: 0.98,
 
-  // Sharp crisp dark boundary
+  // Subtle dark boundary line
   borderColor: '#1e293b',
-  borderWidth: 1.4,
+  borderWidth: 1.3,
   borderOpacity: 1.0,
 
   // Selected plot highlighting
@@ -78,7 +78,7 @@ export const MASTERPLAN_PLOT_STYLES = {
   selectedBorderColor: '#0284c7',
   selectedBorderWidth: 2.8,
 
-  // Bold dark plot numbers with crisp white contrast halo
+  // Dark navy/charcoal plot numbers with white contrast halo
   labelColor: '#0f172a',
   labelHaloColor: '#ffffff',
   labelHaloWidth: 1.8,
@@ -86,11 +86,11 @@ export const MASTERPLAN_PLOT_STYLES = {
 };
 
 export const MASTERPLAN_AMENITY_STYLES = {
-  parkFill: '#15803d',           // Vibrant rich natural green
+  parkFill: '#15803d',           // Rich natural green
   parkBorder: '#14532d',         // Deep dark green border
-  caSiteFill: '#ecdba8',         // Warm natural sand/beige ground
+  caSiteFill: '#ecdba8',         // Warm natural sandy/cream tone
   caSiteBorder: '#a39063',       // Crisp subtle sand border
-  entryFill: '#0284c7',          // Vibrant cyan/blue portal
+  entryFill: '#0284c7',          // Vibrant cyan/blue portal accent
   entryBorder: '#0369a1'         // Crisp dark blue border
 };
 
