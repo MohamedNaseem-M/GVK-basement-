@@ -58,6 +58,29 @@ export const SELECTED_PLOT_LAYERS = {
       'line-opacity': 0.98
     }
   },
+  dimensionLine: {
+    id: 'masterplan-selected-overlay-dimension-line',
+    type: 'line' as const,
+    source: SELECTED_PLOT_SOURCE_ID,
+    filter: ['==', ['get', 'type'], 'DIMENSION_LINE'],
+    layout: {
+      'line-cap': 'round' as const,
+      'line-join': 'round' as const
+    },
+    paint: {
+      'line-color': '#ffffff',
+      'line-width': [
+        'interpolate', ['exponential', 2], ['zoom'],
+        14, 0.4,
+        17, 1.2,
+        18, 1.8,
+        19, 2.5,
+        20, 3.5
+      ] as any,
+      'line-dasharray': [3, 2],
+      'line-opacity': 0.85
+    }
+  },
   cornerTicks: {
     id: 'masterplan-selected-overlay-corner-ticks',
     type: 'symbol' as const,
@@ -99,7 +122,8 @@ export const SELECTED_PLOT_LAYERS = {
         '\n', {},
         ['get', 'areaSqMText'], { 'font-scale': 0.92 },
         '\n', {},
-        ['get', 'areaSqFtText'], { 'font-scale': 0.80 }
+        ['get', 'areaSqFtText'], { 'font-scale': 0.80 },
+        ['get', 'cornerText'], { 'font-scale': 0.80 }
       ] as any,
       'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
       'text-size': [
@@ -239,6 +263,9 @@ export class MasterPlanPlotService {
       }
       if (!map.getLayer(SELECTED_PLOT_LAYERS.border.id)) {
         map.addLayer(SELECTED_PLOT_LAYERS.border as any);
+      }
+      if (!map.getLayer(SELECTED_PLOT_LAYERS.dimensionLine.id)) {
+        map.addLayer(SELECTED_PLOT_LAYERS.dimensionLine as any);
       }
       if (!map.getLayer(SELECTED_PLOT_LAYERS.cornerTicks.id)) {
         map.addLayer(SELECTED_PLOT_LAYERS.cornerTicks as any);
@@ -451,6 +478,165 @@ export class MasterPlanPlotService {
   }
 
   /**
+   * Intelligently segments a polygon ring into Key Corner vertices and Logical Edges
+   * (combining micro-segments of curved arcs into single continuous arc edges).
+   */
+  private segmentPolygonRing(ring: Array<[number, number]>): {
+    keyCorners: Array<[number, number]>;
+    logicalEdges: Array<{
+      subSegments: Array<{ p1: [number, number]; p2: [number, number]; lengthM: number; angleDeg: number }>;
+      totalLengthM: number;
+      midpoint: [number, number];
+      midTangentAngleDeg: number;
+      isArc: boolean;
+    }>;
+    isCornerPlot: boolean;
+  } {
+    const pts = ring.slice();
+    if (
+      pts.length > 1 &&
+      pts[0][0] === pts[pts.length - 1][0] &&
+      pts[0][1] === pts[pts.length - 1][1]
+    ) {
+      pts.pop();
+    }
+
+    const n = pts.length;
+    if (n < 3) {
+      return { keyCorners: ring, logicalEdges: [], isCornerPlot: false };
+    }
+
+    const R = 6371000;
+    const segments: Array<{ p1: [number, number]; p2: [number, number]; lengthM: number; angleDeg: number }> = [];
+
+    for (let i = 0; i < n; i++) {
+      const p1 = pts[i];
+      const p2 = pts[(i + 1) % n];
+
+      const dLat = (p2[1] - p1[1]) * Math.PI / 180;
+      const dLng = (p2[0] - p1[0]) * Math.PI / 180;
+      const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(p1[1] * Math.PI / 180) * Math.cos(p2[1] * Math.PI / 180) *
+                Math.sin(dLng / 2) * Math.sin(dLng / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      const lengthM = R * c;
+
+      const dy = p2[1] - p1[1];
+      const dx = (p2[0] - p1[0]) * Math.cos(p1[1] * Math.PI / 180);
+      const angleDeg = Math.atan2(dy, dx) * 180 / Math.PI;
+
+      segments.push({ p1, p2, lengthM, angleDeg });
+    }
+
+    const isKeyCorner: boolean[] = new Array(n).fill(false);
+    let hasArcSubSegments = false;
+
+    for (let i = 0; i < n; i++) {
+      const prevIdx = (i - 1 + n) % n;
+      const sPrev = segments[prevIdx];
+      const sCurr = segments[i];
+
+      let turn = sCurr.angleDeg - sPrev.angleDeg;
+      while (turn > 180) turn -= 360;
+      while (turn <= -180) turn += 360;
+      const absTurn = Math.abs(turn);
+
+      if (sCurr.lengthM < 2.5) {
+        hasArcSubSegments = true;
+      }
+
+      const isSharpTurn = absTurn >= 25;
+      const isTransition =
+        (sPrev.lengthM >= 2.5 && sCurr.lengthM < 2.5) ||
+        (sPrev.lengthM < 2.5 && sCurr.lengthM >= 2.5);
+
+      if (isSharpTurn || isTransition) {
+        isKeyCorner[i] = true;
+      }
+    }
+
+    let cornerIndices: number[] = [];
+    for (let i = 0; i < n; i++) {
+      if (isKeyCorner[i]) {
+        cornerIndices.push(i);
+      }
+    }
+
+    if (cornerIndices.length < 3) {
+      const turns = segments.map((s, i) => {
+        const prevIdx = (i - 1 + n) % n;
+        let diff = s.angleDeg - segments[prevIdx].angleDeg;
+        while (diff > 180) diff -= 360;
+        while (diff <= -180) diff += 360;
+        return { index: i, turn: Math.abs(diff) };
+      });
+      turns.sort((a, b) => b.turn - a.turn);
+      cornerIndices = turns.slice(0, Math.min(4, n)).map(t => t.index).sort((a, b) => a - b);
+    }
+
+    const keyCorners = cornerIndices.map(idx => pts[idx]);
+
+    const logicalEdges = [];
+    const k = cornerIndices.length;
+
+    for (let m = 0; m < k; m++) {
+      const startIdx = cornerIndices[m];
+      const endIdx = cornerIndices[(m + 1) % k];
+
+      const edgeSubSegments = [];
+      let curr = startIdx;
+      while (curr !== endIdx) {
+        edgeSubSegments.push(segments[curr]);
+        curr = (curr + 1) % n;
+      }
+
+      if (edgeSubSegments.length === 0) continue;
+
+      let totalLengthM = 0;
+      for (const seg of edgeSubSegments) {
+        totalLengthM += seg.lengthM;
+      }
+
+      const isArc = edgeSubSegments.length > 1 || edgeSubSegments[0].lengthM < 2.5;
+
+      const halfLen = totalLengthM / 2;
+      let accumulated = 0;
+      let midpoint: [number, number] = edgeSubSegments[0].p1;
+      let midTangentAngleDeg = edgeSubSegments[0].angleDeg;
+
+      for (const seg of edgeSubSegments) {
+        if (accumulated + seg.lengthM >= halfLen) {
+          const rem = halfLen - accumulated;
+          const frac = seg.lengthM > 0 ? rem / seg.lengthM : 0;
+          midpoint = [
+            seg.p1[0] + frac * (seg.p2[0] - seg.p1[0]),
+            seg.p1[1] + frac * (seg.p2[1] - seg.p1[1])
+          ];
+          midTangentAngleDeg = seg.angleDeg;
+          break;
+        }
+        accumulated += seg.lengthM;
+      }
+
+      logicalEdges.push({
+        subSegments: edgeSubSegments,
+        totalLengthM,
+        midpoint,
+        midTangentAngleDeg,
+        isArc
+      });
+    }
+
+    const isCornerPlot = hasArcSubSegments || logicalEdges.length > 4;
+
+    return {
+      keyCorners,
+      logicalEdges,
+      isCornerPlot
+    };
+  }
+
+  /**
    * Generates the multi-feature GeoJSON collection for the selected plot (Image 2 style)
    */
   private generateSelectedPlotOverlayGeoJson(feature: MasterPlanPlotFeature): any {
@@ -472,9 +658,22 @@ export class MasterPlanPlotService {
       properties: { type: 'SURFACE' }
     };
 
-    // 2. Centroid Center Multi-line Label Feature
+    // 2. Dashed Dimension Line feature along perimeter
+    const dimensionLineFeature = {
+      type: 'Feature',
+      geometry: {
+        type: 'LineString',
+        coordinates: ring
+      },
+      properties: { type: 'DIMENSION_LINE' }
+    };
+
+    // Segment polyline ring into Key Corners and Logical Edges
+    const segmentation = this.segmentPolygonRing(ring);
+
+    // 3. Centroid Center Multi-line Label Feature
     let sumLng = 0, sumLat = 0;
-    const n = ring.length - 1; // Exclude duplicate last closure point
+    const n = ring.length - 1;
     for (let i = 0; i < n; i++) {
       sumLng += ring[i][0];
       sumLat += ring[i][1];
@@ -485,6 +684,7 @@ export class MasterPlanPlotService {
     const plotNumText = `${plotNumber}`;
     const areaSqMText = `${areaSqM} m²`;
     const areaSqFtText = `${areaSqFtFormatted} ft²`;
+    const cornerText = segmentation.isCornerPlot ? '\nCorner plot' : '';
 
     const centerLabelFeature = {
       type: 'Feature',
@@ -496,12 +696,13 @@ export class MasterPlanPlotService {
         type: 'CENTER_LABEL',
         plotNumText,
         areaSqMText,
-        areaSqFtText
+        areaSqFtText,
+        cornerText
       }
     };
 
-    // 3. Corner Ticks
-    const cornerFeatures = ring.slice(0, n).map((pt: any) => ({
+    // 4. Corner Ticks ONLY at key corner junction vertices
+    const cornerFeatures = segmentation.keyCorners.map((pt: [number, number]) => ({
       type: 'Feature',
       geometry: {
         type: 'Point',
@@ -510,50 +711,45 @@ export class MasterPlanPlotService {
       properties: { type: 'CORNER_TICK' }
     }));
 
-    // 4. Edge Dimension Badges along the 4 edges
-    const edgeFeatures: any[] = [];
-    for (let i = 0; i < n; i++) {
-      const p1 = ring[i];
-      const p2 = ring[i + 1] || ring[0];
-
-      const midLng = (p1[0] + p2[0]) / 2;
-      const midLat = (p1[1] + p2[1]) / 2;
-
-      // Geodesic distance in meters
-      const R = 6371000;
-      const dLat = (p2[1] - p1[1]) * Math.PI / 180;
-      const dLng = (p2[0] - p1[0]) * Math.PI / 180;
-      const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                Math.cos(p1[1] * Math.PI / 180) * Math.cos(p2[1] * Math.PI / 180) *
-                Math.sin(dLng / 2) * Math.sin(dLng / 2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      const distM = Math.round(R * c);
-
-      // Angle calculation
-      const dy = p2[1] - p1[1];
-      const dx = (p2[0] - p1[0]) * Math.cos(p1[1] * Math.PI / 180);
-      let angleDeg = Math.atan2(dy, dx) * 180 / Math.PI;
-      if (angleDeg > 90 || angleDeg < -90) {
-        angleDeg += 180;
+    // 5. Edge Dimension Badges (One per logical edge / curve arc)
+    const edgeFeatures = segmentation.logicalEdges.map(edge => {
+      const distM = edge.totalLengthM;
+      let dimensionText = '';
+      if (Math.abs(distM - Math.round(distM)) < 0.08) {
+        dimensionText = `${Math.round(distM)} m`;
+      } else {
+        dimensionText = `${distM.toFixed(2)} m`;
       }
 
-      edgeFeatures.push({
+      let angle = edge.midTangentAngleDeg;
+      if (angle > 90 || angle < -90) {
+        angle += 180;
+      }
+      const rotationDeg = -angle;
+
+      return {
         type: 'Feature',
         geometry: {
           type: 'Point',
-          coordinates: [midLng, midLat]
+          coordinates: edge.midpoint
         },
         properties: {
           type: 'EDGE_DIMENSION',
-          dimensionText: `${distM} m`,
-          rotationDeg: -angleDeg
+          dimensionText,
+          rotationDeg
         }
-      });
-    }
+      };
+    });
 
     return {
       type: 'FeatureCollection',
-      features: [surfaceFeature, centerLabelFeature, ...cornerFeatures, ...edgeFeatures]
+      features: [
+        surfaceFeature,
+        dimensionLineFeature,
+        centerLabelFeature,
+        ...cornerFeatures,
+        ...edgeFeatures
+      ]
     };
   }
 
