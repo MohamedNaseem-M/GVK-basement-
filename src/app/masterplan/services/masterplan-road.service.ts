@@ -46,7 +46,7 @@ export class MasterPlanRoadService {
    */
   private async syncAuthoritativeGeoJson(): Promise<void> {
     try {
-      const response = await fetch('data/roads/gvk-roads.geojson?v=5');
+      const response = await fetch('data/roads/gvk-roads.geojson?v=6');
       if (response.ok) {
         const json = await response.json();
         if (json && json.features && json.features.length > 0) {
@@ -125,10 +125,7 @@ export class MasterPlanRoadService {
         map.addLayer(ROAD_LAYERS.curbLayer as any);
       }
 
-      // Layer 2b: Dashed White Centerline
-      if (!map.getLayer(ROAD_LAYERS.centerlineLayer.id)) {
-        map.addLayer(ROAD_LAYERS.centerlineLayer as any);
-      }
+
 
       // Layer 3: Amenities Surface (Parks, CA Site, Entry)
       if (!map.getLayer(ROAD_LAYERS.amenitySurfaceLayer.id)) {

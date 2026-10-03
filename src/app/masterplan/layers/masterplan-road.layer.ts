@@ -72,30 +72,7 @@ export const ROAD_LAYERS = {
     }
   },
 
-  // 2b. Dashed White Road Centerline (matching reference image)
-  centerlineLayer: {
-    id: 'masterplan-road-centerline',
-    type: 'line' as const,
-    source: ROAD_SOURCE_ID,
-    filter: ['==', ['get', 'isCenterline'], true],
-    layout: {
-      visibility: 'visible' as const,
-      'line-cap': 'round' as const,
-      'line-join': 'round' as const
-    },
-    paint: {
-      'line-color': '#ffffff',
-      'line-width': [
-        'interpolate', ['linear'], ['zoom'],
-        12, 1.0,
-        15, 1.8,
-        18, 3.2,
-        20, 5.5
-      ],
-      'line-dasharray': [3, 3],
-      'line-opacity': 0.85
-    }
-  },
+
 
   // 3. Master Plan Amenities Surface (Parks, CA Site, ENTRY)
   amenitySurfaceLayer: {
