@@ -270,7 +270,7 @@ export const GVK_ROAD_LABELS_GEOJSON: MasterPlanRoadLabelCollection = {
       },
       "properties": {
         "handle": "LBL_PARK_TOP_LEFT",
-        "text": "PARK",
+        "text": "Park",
         "width": "PARK",
         "isAmenityLabel": true,
         "rotationDeg": 0
@@ -287,7 +287,7 @@ export const GVK_ROAD_LABELS_GEOJSON: MasterPlanRoadLabelCollection = {
       },
       "properties": {
         "handle": "LBL_PARK_TOP_CENTER",
-        "text": "PARK",
+        "text": "Park",
         "width": "PARK",
         "isAmenityLabel": true,
         "rotationDeg": 0
@@ -304,7 +304,7 @@ export const GVK_ROAD_LABELS_GEOJSON: MasterPlanRoadLabelCollection = {
       },
       "properties": {
         "handle": "LBL_PARK_TOP_RIGHT",
-        "text": "PARK",
+        "text": "Park",
         "width": "PARK",
         "isAmenityLabel": true,
         "rotationDeg": 90

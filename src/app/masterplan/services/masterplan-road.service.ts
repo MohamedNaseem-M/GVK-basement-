@@ -46,7 +46,7 @@ export class MasterPlanRoadService {
    */
   private async syncAuthoritativeGeoJson(): Promise<void> {
     try {
-      const response = await fetch('data/roads/gvk-roads.geojson?v=2');
+      const response = await fetch('data/roads/gvk-roads.geojson?v=3');
       if (response.ok) {
         const json = await response.json();
         if (json && json.features && json.features.length > 0) {
