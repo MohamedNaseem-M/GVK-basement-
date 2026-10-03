@@ -110,7 +110,12 @@ export class MasterPlanRoadService {
         data: roadsGeoJson as any
       });
 
-      // Layer 0: Green Landscape Verge (Behind asphalt curb)
+      // Layer 0a: Soft Drop Shadow (Architectural depth)
+      if (!map.getLayer(ROAD_LAYERS.shadowLayer.id)) {
+        map.addLayer(ROAD_LAYERS.shadowLayer as any);
+      }
+
+      // Layer 0b: Green Landscape Verge (Behind asphalt curb)
       if (!map.getLayer(ROAD_LAYERS.landscapeVergeLayer.id)) {
         map.addLayer(ROAD_LAYERS.landscapeVergeLayer as any);
       }

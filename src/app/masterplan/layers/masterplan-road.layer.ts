@@ -9,7 +9,38 @@ export const ROAD_SOURCE_ID = 'masterplan-road-source';
 export const ROAD_LABELS_SOURCE_ID = 'masterplan-road-labels-source';
 
 export const ROAD_LAYERS = {
-  // 0. Landscape Verge Strip (Vibrant green planter strip along road edges matching reference design)
+  // 0a. Soft Drop Shadow (Professional architectural elevation depth matching IMAGE 2)
+  shadowLayer: {
+    id: 'masterplan-road-shadow',
+    type: 'line' as const,
+    source: ROAD_SOURCE_ID,
+    filter: ['==', ['get', 'isCorridor'], true],
+    layout: {
+      visibility: 'visible' as const,
+      'line-cap': 'round' as const,
+      'line-join': 'round' as const
+    },
+    paint: {
+      'line-color': '#020617', // Soft dark architectural shadow
+      'line-width': [
+        'interpolate', ['linear'], ['zoom'],
+        12, 6.0,
+        15, 10.0,
+        18, 18.0,
+        20, 28.0
+      ],
+      'line-blur': [
+        'interpolate', ['linear'], ['zoom'],
+        12, 3.0,
+        15, 5.0,
+        18, 8.0,
+        20, 12.0
+      ],
+      'line-opacity': 0.35
+    }
+  },
+
+  // 0b. Landscape Verge Strip (Vibrant green planter strip along road edges matching reference design)
   landscapeVergeLayer: {
     id: 'masterplan-road-landscape-verge',
     type: 'line' as const,
