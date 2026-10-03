@@ -292,7 +292,7 @@ avenues.forEach(ave => {
 /**
  * Generates smooth circular arc corner fillets (curved road corners) for polygon rings
  */
-function filletPolygonRing(ring, radius = 4.8, numPoints = 10) {
+function filletPolygonRing(ring, radius = 5.2, numPoints = 12) {
   const n = ring.length;
   const isClosed = (ring[0][0] === ring[n - 1][0] && ring[0][1] === ring[n - 1][1]);
   const len = isClosed ? n - 1 : n;
@@ -326,7 +326,7 @@ function filletPolygonRing(ring, radius = 4.8, numPoints = 10) {
       continue;
     }
 
-    const maxT = Math.min(len1 / 2.1, len2 / 2.1);
+    const maxT = Math.min(len1 / 2.05, len2 / 2.05);
     const halfAngle = angle / 2;
     const tanHalf = Math.tan((Math.PI - angle) / 2);
     let T = radius * tanHalf;
@@ -381,7 +381,7 @@ function filletPolygonRing(ring, radius = 4.8, numPoints = 10) {
 // UNION ALL ROAD CORRIDORS INTO ONE CONTINUOUS ROAD SURFACE GEOMETRY WITH CURVED CORNER FILLETS
 const rawMergedCadPolygons = polygonClipping.union(...corridorCadPolygons);
 const mergedCadPolygons = rawMergedCadPolygons.map(polyRings =>
-  polyRings.map(ring => filletPolygonRing(ring, 4.8, 10))
+  polyRings.map(ring => filletPolygonRing(ring, 5.2, 12))
 );
 
 mergedCadPolygons.forEach((polyRings, polyIdx) => {
