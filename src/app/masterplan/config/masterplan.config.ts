@@ -28,7 +28,7 @@ export const MASTERPLAN_ANCHOR: MasterPlanProjectAnchor = {
 
 export const MASTERPLAN_ROAD_STYLES = {
   // Professional real-estate master plan aesthetics (matching reference design)
-  asphaltSurfaceColor: '#1e293b', // Dark charcoal asphalt slate
+  asphaltSurfaceColor: '#181e29', // Deep charcoal / dark slate asphalt
   asphaltOpacity: 0.98,
   curbBorderColor: '#64748b',    // Crisp light curb border
   curbBorderWidth: 3.5,
@@ -63,8 +63,8 @@ export const MASTERPLAN_PLOT_ANCHOR: MasterPlanProjectAnchor = {
 };
 
 export const MASTERPLAN_PLOT_STYLES = {
-  // Warm cream / light beige fill matching reference image
-  fillColor: '#fef9ed',
+  // Warm light cream / beige plot fill matching reference image (Option 1: Premium)
+  fillColor: '#fdf3df',
   fillOpacity: 0.98,
 
   // Sharp crisp dark boundary
@@ -73,7 +73,7 @@ export const MASTERPLAN_PLOT_STYLES = {
   borderOpacity: 1.0,
 
   // Selected plot highlighting
-  selectedFillColor: '#bae6fd',
+  selectedFillColor: '#cbebf6',
   selectedFillOpacity: 0.98,
   selectedBorderColor: '#0284c7',
   selectedBorderWidth: 2.8,
@@ -86,10 +86,10 @@ export const MASTERPLAN_PLOT_STYLES = {
 };
 
 export const MASTERPLAN_AMENITY_STYLES = {
-  parkFill: '#16a34a',           // Vibrant rich natural green
+  parkFill: '#15803d',           // Vibrant rich natural green
   parkBorder: '#14532d',         // Deep dark green border
-  caSiteFill: '#ebd7ac',         // Warm natural sand/beige ground
-  caSiteBorder: '#948256',       // Crisp subtle sand border
+  caSiteFill: '#ecdba8',         // Warm natural sand/beige ground
+  caSiteBorder: '#a39063',       // Crisp subtle sand border
   entryFill: '#0284c7',          // Vibrant cyan/blue portal
   entryBorder: '#0369a1'         // Crisp dark blue border
 };
