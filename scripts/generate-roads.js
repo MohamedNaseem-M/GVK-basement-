@@ -287,6 +287,80 @@ avenues.forEach(ave => {
   });
 });
 
+// 4. Road Centerlines (Dashed white lines matching reference design)
+roadFeatures.push({
+  type: 'Feature',
+  id: 'CENTERLINE_12M_CENTRAL',
+  geometry: {
+    type: 'LineString',
+    coordinates: [cadToWgs84(COLUMNS[0].leftX, 1507.31), cadToWgs84(X_EAST_ENTRY, 1507.31)]
+  },
+  properties: {
+    handle: 'CENTERLINE_12M_CENTRAL',
+    roadType: 'CENTERLINE',
+    width: '12M',
+    label: 'Centerline',
+    isCenterline: true,
+    layer: 'CENTERLINE'
+  }
+});
+
+roadFeatures.push({
+  type: 'Feature',
+  id: 'CENTERLINE_9M_TOP',
+  geometry: {
+    type: 'LineString',
+    coordinates: [cadToWgs84(COLUMNS[5].leftX, 1695.43), cadToWgs84(COLUMNS[11].leftX, 1695.43)]
+  },
+  properties: {
+    handle: 'CENTERLINE_9M_TOP',
+    roadType: 'CENTERLINE',
+    width: '9M',
+    label: 'Centerline',
+    isCenterline: true,
+    layer: 'CENTERLINE'
+  }
+});
+
+avenues.forEach(ave => {
+  const cx = (ave.leftX + ave.rightX) / 2;
+  roadFeatures.push({
+    type: 'Feature',
+    id: `CENTERLINE_${ave.id}_UPPER`,
+    geometry: {
+      type: 'LineString',
+      coordinates: [cadToWgs84(cx, Y_MID_UPPER), cadToWgs84(cx, ave.yTop)]
+    },
+    properties: {
+      handle: `CENTERLINE_${ave.id}_UPPER`,
+      roadType: 'CENTERLINE',
+      width: ave.width,
+      label: 'Centerline',
+      isCenterline: true,
+      layer: 'CENTERLINE'
+    }
+  });
+
+  const syL = southY(ave.leftX);
+  const syR = southY(ave.rightX);
+  roadFeatures.push({
+    type: 'Feature',
+    id: `CENTERLINE_${ave.id}_LOWER`,
+    geometry: {
+      type: 'LineString',
+      coordinates: [cadToWgs84(cx, Y_MID_LOWER), cadToWgs84(cx, (syL + syR) / 2)]
+    },
+    properties: {
+      handle: `CENTERLINE_${ave.id}_LOWER`,
+      roadType: 'CENTERLINE',
+      width: ave.width,
+      label: 'Centerline',
+      isCenterline: true,
+      layer: 'CENTERLINE'
+    }
+  });
+});
+
 /**
  * Generates smooth circular arc corner fillets (curved road corners) for polygon rings
  */

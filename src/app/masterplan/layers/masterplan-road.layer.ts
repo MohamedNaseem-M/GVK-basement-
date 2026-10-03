@@ -9,6 +9,30 @@ export const ROAD_SOURCE_ID = 'masterplan-road-source';
 export const ROAD_LABELS_SOURCE_ID = 'masterplan-road-labels-source';
 
 export const ROAD_LAYERS = {
+  // 0. Landscape Verge Strip (Vibrant green planter strip along road edges matching reference design)
+  landscapeVergeLayer: {
+    id: 'masterplan-road-landscape-verge',
+    type: 'line' as const,
+    source: ROAD_SOURCE_ID,
+    filter: ['==', ['get', 'isCorridor'], true],
+    layout: {
+      visibility: 'visible' as const,
+      'line-cap': 'round' as const,
+      'line-join': 'round' as const
+    },
+    paint: {
+      'line-color': '#15803d', // Rich natural green planter verge
+      'line-width': [
+        'interpolate', ['linear'], ['zoom'],
+        12, 3.5,
+        15, 6.0,
+        18, 11.0,
+        20, 20.0
+      ],
+      'line-opacity': 0.95
+    }
+  },
+
   // 1. Filled Road Corridor Surface (Dark Asphalt/Slate)
   surfaceLayer: {
     id: 'masterplan-road-surface',
@@ -24,7 +48,7 @@ export const ROAD_LAYERS = {
     }
   },
 
-  // 2. Road Curb / Border Edges (Subtle lighter border)
+  // 2. Road Curb / Border Edges (Subtle lighter silver/white border)
   curbLayer: {
     id: 'masterplan-road-curb',
     type: 'line' as const,
@@ -36,15 +60,40 @@ export const ROAD_LAYERS = {
       'line-join': 'round' as const
     },
     paint: {
-      'line-color': MASTERPLAN_ROAD_STYLES.curbBorderColor,
+      'line-color': '#e2e8f0',
       'line-width': [
         'interpolate', ['linear'], ['zoom'],
-        12, 1.5,
-        15, 2.5,
-        18, 4.5,
-        20, 7.0
+        12, 1.2,
+        15, 2.0,
+        18, 3.8,
+        20, 6.0
       ],
-      'line-opacity': MASTERPLAN_ROAD_STYLES.curbBorderOpacity
+      'line-opacity': 0.98
+    }
+  },
+
+  // 2b. Dashed White Road Centerline (matching reference image)
+  centerlineLayer: {
+    id: 'masterplan-road-centerline',
+    type: 'line' as const,
+    source: ROAD_SOURCE_ID,
+    filter: ['==', ['get', 'isCenterline'], true],
+    layout: {
+      visibility: 'visible' as const,
+      'line-cap': 'round' as const,
+      'line-join': 'round' as const
+    },
+    paint: {
+      'line-color': '#ffffff',
+      'line-width': [
+        'interpolate', ['linear'], ['zoom'],
+        12, 1.0,
+        15, 1.8,
+        18, 3.2,
+        20, 5.5
+      ],
+      'line-dasharray': [3, 3],
+      'line-opacity': 0.85
     }
   },
 

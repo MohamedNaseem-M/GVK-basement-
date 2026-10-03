@@ -46,7 +46,7 @@ export class MasterPlanRoadService {
    */
   private async syncAuthoritativeGeoJson(): Promise<void> {
     try {
-      const response = await fetch('data/roads/gvk-roads.geojson?v=3');
+      const response = await fetch('data/roads/gvk-roads.geojson?v=4');
       if (response.ok) {
         const json = await response.json();
         if (json && json.features && json.features.length > 0) {
@@ -110,6 +110,11 @@ export class MasterPlanRoadService {
         data: roadsGeoJson as any
       });
 
+      // Layer 0: Green Landscape Verge (Behind asphalt curb)
+      if (!map.getLayer(ROAD_LAYERS.landscapeVergeLayer.id)) {
+        map.addLayer(ROAD_LAYERS.landscapeVergeLayer as any);
+      }
+
       // Layer 1: Road Surface Fill (Dark Asphalt/Slate)
       if (!map.getLayer(ROAD_LAYERS.surfaceLayer.id)) {
         map.addLayer(ROAD_LAYERS.surfaceLayer as any);
@@ -118,6 +123,11 @@ export class MasterPlanRoadService {
       // Layer 2: Road Curb Borders
       if (!map.getLayer(ROAD_LAYERS.curbLayer.id)) {
         map.addLayer(ROAD_LAYERS.curbLayer as any);
+      }
+
+      // Layer 2b: Dashed White Centerline
+      if (!map.getLayer(ROAD_LAYERS.centerlineLayer.id)) {
+        map.addLayer(ROAD_LAYERS.centerlineLayer as any);
       }
 
       // Layer 3: Amenities Surface (Parks, CA Site, Entry)
