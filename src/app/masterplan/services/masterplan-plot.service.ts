@@ -17,14 +17,30 @@ import { GVK_PLOTS_GEOJSON } from '../data/plots/gvk-plots.data';
 export const SELECTED_PLOT_SOURCE_ID = 'masterplan-selected-overlay-source';
 
 export const SELECTED_PLOT_LAYERS = {
+  glow: {
+    id: 'masterplan-selected-overlay-glow',
+    type: 'line' as const,
+    source: SELECTED_PLOT_SOURCE_ID,
+    filter: ['==', ['get', 'type'], 'SURFACE'],
+    layout: {
+      'line-cap': 'round' as const,
+      'line-join': 'round' as const
+    },
+    paint: {
+      'line-color': '#f59e0b',
+      'line-width': 6.0,
+      'line-blur': 4.0,
+      'line-opacity': 0.60
+    }
+  },
   fill: {
     id: 'masterplan-selected-overlay-fill',
     type: 'fill' as const,
     source: SELECTED_PLOT_SOURCE_ID,
     filter: ['==', ['get', 'type'], 'SURFACE'],
     paint: {
-      'fill-color': '#1d4ed8',
-      'fill-opacity': 0.94
+      'fill-color': '#f59e0b',
+      'fill-opacity': 0.22
     }
   },
   border: {
@@ -32,10 +48,14 @@ export const SELECTED_PLOT_LAYERS = {
     type: 'line' as const,
     source: SELECTED_PLOT_SOURCE_ID,
     filter: ['==', ['get', 'type'], 'SURFACE'],
+    layout: {
+      'line-cap': 'round' as const,
+      'line-join': 'round' as const
+    },
     paint: {
-      'line-color': '#000000',
-      'line-width': 2.0,
-      'line-dasharray': [2, 2]
+      'line-color': '#d97706',
+      'line-width': 3.2,
+      'line-opacity': 0.98
     }
   },
   cornerTicks: {
@@ -211,6 +231,9 @@ export class MasterPlanPlotService {
         data: { type: 'FeatureCollection', features: [] }
       });
 
+      if (!map.getLayer(SELECTED_PLOT_LAYERS.glow.id)) {
+        map.addLayer(SELECTED_PLOT_LAYERS.glow as any);
+      }
       if (!map.getLayer(SELECTED_PLOT_LAYERS.fill.id)) {
         map.addLayer(SELECTED_PLOT_LAYERS.fill as any);
       }
@@ -364,6 +387,50 @@ export class MasterPlanPlotService {
     );
   }
 
+  private animationFrameId: number | null = null;
+
+  /**
+   * Starts a smooth, lightweight requestAnimationFrame pulse animation loop on the glowing golden outline
+   */
+  private startPulseAnimation(): void {
+    this.stopPulseAnimation();
+
+    const animate = (time: number) => {
+      if (!this.mapInstance || this.selectedPlotId() === null) {
+        return;
+      }
+
+      // Smooth ~1.8s sine wave pulse cycle
+      const cycleMs = 1800;
+      const t = (time % cycleMs) / cycleMs * 2 * Math.PI;
+      const pulseFactor = (Math.sin(t) + 1) / 2; // 0 to 1
+
+      const glowOpacity = 0.35 + 0.35 * pulseFactor; // 0.35 to 0.70
+      const glowWidth = 4.5 + 2.5 * pulseFactor; // 4.5px to 7.0px
+
+      try {
+        if (this.mapInstance.getLayer(SELECTED_PLOT_LAYERS.glow.id)) {
+          this.mapInstance.setPaintProperty(SELECTED_PLOT_LAYERS.glow.id, 'line-opacity', glowOpacity);
+          this.mapInstance.setPaintProperty(SELECTED_PLOT_LAYERS.glow.id, 'line-width', glowWidth);
+        }
+      } catch (err) {}
+
+      this.animationFrameId = requestAnimationFrame(animate);
+    };
+
+    this.animationFrameId = requestAnimationFrame(animate);
+  }
+
+  /**
+   * Stops the pulse animation loop
+   */
+  private stopPulseAnimation(): void {
+    if (this.animationFrameId !== null) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
+    }
+  }
+
   /**
    * Updates the selected plot GeoJSON overlay source
    */
@@ -373,12 +440,14 @@ export class MasterPlanPlotService {
     if (!source) return;
 
     if (!feature) {
+      this.stopPulseAnimation();
       source.setData({ type: 'FeatureCollection', features: [] });
       return;
     }
 
     const geojson = this.generateSelectedPlotOverlayGeoJson(feature);
     source.setData(geojson as any);
+    this.startPulseAnimation();
   }
 
   /**

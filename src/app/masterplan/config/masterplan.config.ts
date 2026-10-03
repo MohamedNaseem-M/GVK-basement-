@@ -72,11 +72,11 @@ export const MASTERPLAN_PLOT_STYLES = {
   borderWidth: 1.3,
   borderOpacity: 1.0,
 
-  // Selected plot highlighting
-  selectedFillColor: '#cbebf6',
-  selectedFillOpacity: 0.98,
-  selectedBorderColor: '#0284c7',
-  selectedBorderWidth: 2.8,
+  // Selected plot highlighting (Warm golden/amber transparent overlay & glowing border)
+  selectedFillColor: '#fef08a',
+  selectedFillOpacity: 0.35,
+  selectedBorderColor: '#d97706',
+  selectedBorderWidth: 3.2,
 
   // Dark navy/charcoal plot numbers with white contrast halo
   labelColor: '#0f172a',
