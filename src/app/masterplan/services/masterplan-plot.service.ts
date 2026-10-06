@@ -150,6 +150,18 @@ export const SELECTED_PLOT_LAYERS = {
       'text-halo-width': 2.2
     }
   },
+  leaderLine: {
+    id: 'masterplan-selected-overlay-leader-line',
+    type: 'line' as const,
+    source: SELECTED_PLOT_SOURCE_ID,
+    filter: ['==', ['get', 'type'], 'LEADER_LINE'],
+    paint: {
+      'line-color': '#ffffff',
+      'line-width': 1.5,
+      'line-dasharray': [2, 2],
+      'line-opacity': 0.9
+    }
+  },
   edgeDimensions: {
     id: 'masterplan-selected-overlay-edge-dimensions',
     type: 'symbol' as const,
@@ -172,8 +184,8 @@ export const SELECTED_PLOT_LAYERS = {
       'text-pitch-alignment': 'map' as const,
       'text-keep-upright': true,
       'text-anchor': 'center' as const,
-      'text-allow-overlap': true,
-      'text-ignore-placement': true
+      'text-allow-overlap': false,
+      'text-ignore-placement': false
     },
     paint: {
       'text-color': '#ffffff',
@@ -273,6 +285,9 @@ export class MasterPlanPlotService {
       }
       if (!map.getLayer(SELECTED_PLOT_LAYERS.centerLabel.id)) {
         map.addLayer(SELECTED_PLOT_LAYERS.centerLabel as any);
+      }
+      if (!map.getLayer(SELECTED_PLOT_LAYERS.leaderLine.id)) {
+        map.addLayer(SELECTED_PLOT_LAYERS.leaderLine as any);
       }
       if (!map.getLayer(SELECTED_PLOT_LAYERS.edgeDimensions.id)) {
         map.addLayer(SELECTED_PLOT_LAYERS.edgeDimensions as any);
@@ -713,7 +728,8 @@ export class MasterPlanPlotService {
     }));
 
     // 5. Edge Dimension Badges (One per logical edge / curve arc)
-    const edgeFeatures = segmentation.logicalEdges.map(edge => {
+    const edgeFeatures: any[] = [];
+    segmentation.logicalEdges.forEach((edge, idx) => {
       const distM = edge.totalLengthM;
       let dimensionText = '';
       if (Math.abs(distM - Math.round(distM)) < 0.08) {
@@ -726,20 +742,53 @@ export class MasterPlanPlotService {
       if (angle > 90 || angle < -90) {
         angle += 180;
       }
-      const rotationDeg = -angle;
+      let rotationDeg = -angle;
 
-      return {
+      let labelLng = edge.midpoint[0];
+      let labelLat = edge.midpoint[1];
+
+      // Smart placement for corner plots to avoid overlapping text on curves
+      const isCurvedOrShort = edge.isArc || edge.totalLengthM < 10;
+      if (segmentation.isCornerPlot && isCurvedOrShort) {
+        // Calculate outward vector radially from centroid
+        const vx = edge.midpoint[0] - centroidLng;
+        const vy = edge.midpoint[1] - centroidLat;
+        const vLen = Math.sqrt(vx * vx + vy * vy);
+        const nx = vx / vLen;
+        const ny = vy / vLen;
+
+        // Offset slightly away from boundary (approx 0.000035 deg is ~3.5m)
+        // Alternating extra offset to prevent adjacent labels from touching
+        const offsetDist = 0.000035 + (idx % 2 === 0 ? 0.00001 : 0);
+        labelLng += nx * offsetDist;
+        labelLat += ny * offsetDist;
+
+        // Keep label horizontal for readability
+        rotationDeg = 0;
+
+        // Add a leader/extension line from boundary to the label
+        edgeFeatures.push({
+          type: 'Feature',
+          geometry: {
+            type: 'LineString',
+            coordinates: [edge.midpoint, [labelLng, labelLat]]
+          },
+          properties: { type: 'LEADER_LINE' }
+        });
+      }
+
+      edgeFeatures.push({
         type: 'Feature',
         geometry: {
           type: 'Point',
-          coordinates: edge.midpoint
+          coordinates: [labelLng, labelLat]
         },
         properties: {
           type: 'EDGE_DIMENSION',
           dimensionText,
           rotationDeg
         }
-      };
+      });
     });
 
     return {
