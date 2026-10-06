@@ -118,13 +118,11 @@ export const SELECTED_PLOT_LAYERS = {
     layout: {
       'text-field': [
         'format',
-        ['get', 'plotNumText'], { 'font-scale': 1.35 },
+        ['get', 'plotNumText'], { 'font-scale': 1.4 },
         '\n', {},
-        ['get', 'areaSqMText'], { 'font-scale': 0.92 },
+        ['get', 'areaSqMText'], { 'font-scale': 0.9 },
         '\n', {},
-        ['get', 'areaSqFtText'], { 'font-scale': 0.80 },
-        '\n', {},
-        ['get', 'cornerText'], { 'font-scale': 0.75 }
+        ['get', 'areaSqFtText'], { 'font-scale': 0.8 }
       ] as any,
       'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
       'text-size': [
@@ -653,6 +651,64 @@ export class MasterPlanPlotService {
   }
 
   /**
+   * Calculates a safe interior point (approximate pole of inaccessibility)
+   * that maximizes clearance from all polygon boundaries.
+   */
+  private getVisualCenter(ring: number[][]): [number, number] {
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const pt of ring) {
+      if (pt[0] < minX) minX = pt[0];
+      if (pt[1] < minY) minY = pt[1];
+      if (pt[0] > maxX) maxX = pt[0];
+      if (pt[1] > maxY) maxY = pt[1];
+    }
+    
+    const isInside = (p: [number, number]) => {
+      let inside = false;
+      for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+        const xi = ring[i][0], yi = ring[i][1];
+        const xj = ring[j][0], yj = ring[j][1];
+        const intersect = ((yi > p[1]) !== (yj > p[1])) && (p[0] < (xj - xi) * (p[1] - yi) / (yj - yi) + xi);
+        if (intersect) inside = !inside;
+      }
+      return inside;
+    };
+
+    const distToSegment = (p: [number, number], v: [number, number], w: [number, number]) => {
+      const l2 = (w[0] - v[0]) ** 2 + (w[1] - v[1]) ** 2;
+      if (l2 === 0) return Math.sqrt((p[0] - v[0]) ** 2 + (p[1] - v[1]) ** 2);
+      let t = ((p[0] - v[0]) * (w[0] - v[0]) + (p[1] - v[1]) * (w[1] - v[1])) / l2;
+      t = Math.max(0, Math.min(1, t));
+      return Math.sqrt((p[0] - (v[0] + t * (w[0] - v[0]))) ** 2 + (p[1] - (v[1] + t * (w[1] - v[1]))) ** 2);
+    };
+
+    let bestP: [number, number] = [(minX + maxX) / 2, (minY + maxY) / 2];
+    let maxClearance = -Infinity;
+    
+    // 25x25 grid search for highest clearance
+    const stepX = (maxX - minX) / 25;
+    const stepY = (maxY - minY) / 25;
+    
+    for (let x = minX + stepX; x < maxX; x += stepX) {
+      for (let y = minY + stepY; y < maxY; y += stepY) {
+        const p: [number, number] = [x, y];
+        if (isInside(p)) {
+          let minD = Infinity;
+          for (let i = 0; i < ring.length - 1; i++) {
+            const d = distToSegment(p, ring[i] as [number, number], ring[i+1] as [number, number]);
+            if (d < minD) minD = d;
+          }
+          if (minD > maxClearance) {
+            maxClearance = minD;
+            bestP = p;
+          }
+        }
+      }
+    }
+    return bestP;
+  }
+
+  /**
    * Generates the multi-feature GeoJSON collection for the selected plot (Image 2 style)
    */
   private generateSelectedPlotOverlayGeoJson(feature: MasterPlanPlotFeature): any {
@@ -688,14 +744,10 @@ export class MasterPlanPlotService {
     const segmentation = this.segmentPolygonRing(ring);
 
     // 3. Centroid Center Multi-line Label Feature
-    let sumLng = 0, sumLat = 0;
-    const n = ring.length - 1;
-    for (let i = 0; i < n; i++) {
-      sumLng += ring[i][0];
-      sumLat += ring[i][1];
-    }
-    const centroidLng = sumLng / n;
-    const centroidLat = sumLat / n;
+    // Use visual center (Pole of Inaccessibility) instead of vertex-averaging to safely center text
+    const visualCenter = this.getVisualCenter(ring);
+    const centroidLng = visualCenter[0];
+    const centroidLat = visualCenter[1];
 
     const plotNumText = `${plotNumber}`;
     const areaSqMText = `${areaSqM} m²`;
