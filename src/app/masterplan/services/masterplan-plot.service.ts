@@ -27,10 +27,10 @@ export const SELECTED_PLOT_LAYERS = {
       'line-join': 'round' as const
     },
     paint: {
-      'line-color': '#f59e0b',
+      'line-color': '#2b82d4',
       'line-width': 6.0,
       'line-blur': 4.0,
-      'line-opacity': 0.60
+      'line-opacity': 0.20
     }
   },
   fill: {
@@ -39,8 +39,8 @@ export const SELECTED_PLOT_LAYERS = {
     source: SELECTED_PLOT_SOURCE_ID,
     filter: ['==', ['get', 'type'], 'SURFACE'],
     paint: {
-      'fill-color': '#f59e0b',
-      'fill-opacity': 0.22
+      'fill-color': '#2b82d4',
+      'fill-opacity': 1.0
     }
   },
   border: {
@@ -53,9 +53,9 @@ export const SELECTED_PLOT_LAYERS = {
       'line-join': 'round' as const
     },
     paint: {
-      'line-color': '#d97706',
-      'line-width': 3.2,
-      'line-opacity': 0.98
+      'line-color': '#111111',
+      'line-width': 2.5,
+      'line-opacity': 1.0
     }
   },
   dimensionLine: {
@@ -68,7 +68,7 @@ export const SELECTED_PLOT_LAYERS = {
       'line-join': 'round' as const
     },
     paint: {
-      'line-color': '#ffffff',
+      'line-color': '#aaaaaa',
       'line-width': [
         'interpolate', ['exponential', 2], ['zoom'],
         14, 0.4,
@@ -77,8 +77,8 @@ export const SELECTED_PLOT_LAYERS = {
         19, 2.5,
         20, 3.5
       ] as any,
-      'line-dasharray': [3, 2],
-      'line-opacity': 0.85
+      'line-dasharray': [3, 3],
+      'line-opacity': 1.0
     }
   },
   cornerTicks: {
@@ -87,7 +87,7 @@ export const SELECTED_PLOT_LAYERS = {
     source: SELECTED_PLOT_SOURCE_ID,
     filter: ['==', ['get', 'type'], 'CORNER_TICK'],
     layout: {
-      'text-field': '+',
+      'text-field': '|',
       'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
       'text-size': [
         'interpolate', ['exponential', 2], ['zoom'],
@@ -105,9 +105,7 @@ export const SELECTED_PLOT_LAYERS = {
       'text-ignore-placement': true
     },
     paint: {
-      'text-color': '#ffffff',
-      'text-halo-color': '#000000',
-      'text-halo-width': 1.8
+      'text-color': '#aaaaaa'
     }
   },
   centerLabel: {
@@ -118,12 +116,11 @@ export const SELECTED_PLOT_LAYERS = {
     layout: {
       'text-field': [
         'format',
-        ['get', 'plotNumText'], { 'font-scale': 1.35 },
+        ['get', 'plotNumText'], { 'font-scale': 1.8 },
         '\n', {},
-        ['get', 'areaSqMText'], { 'font-scale': 0.92 },
+        ['get', 'areaSqMText'], { 'font-scale': 0.75 },
         '\n', {},
-        ['get', 'areaSqFtText'], { 'font-scale': 0.80 },
-        ['get', 'cornerText'], { 'font-scale': 0.80 }
+        ['get', 'areaSqFtText'], { 'font-scale': 1.0 }
       ] as any,
       'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
       'text-size': [
@@ -144,9 +141,7 @@ export const SELECTED_PLOT_LAYERS = {
       'text-line-height': 1.15
     },
     paint: {
-      'text-color': '#ffffff',
-      'text-halo-color': '#0f172a',
-      'text-halo-width': 2.2
+      'text-color': '#ffffff'
     }
   },
   edgeDimensions: {
@@ -175,9 +170,7 @@ export const SELECTED_PLOT_LAYERS = {
       'text-ignore-placement': true
     },
     paint: {
-      'text-color': '#ffffff',
-      'text-halo-color': '#000000',
-      'text-halo-width': 2.0
+      'text-color': '#aaaaaa'
     }
   }
 };
