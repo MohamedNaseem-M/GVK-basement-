@@ -123,7 +123,8 @@ export const SELECTED_PLOT_LAYERS = {
         ['get', 'areaSqMText'], { 'font-scale': 0.92 },
         '\n', {},
         ['get', 'areaSqFtText'], { 'font-scale': 0.80 },
-        ['get', 'cornerText'], { 'font-scale': 0.80 }
+        '\n', {},
+        ['get', 'cornerText'], { 'font-scale': 0.75 }
       ] as any,
       'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
       'text-size': [
