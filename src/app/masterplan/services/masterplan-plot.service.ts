@@ -653,27 +653,13 @@ export class MasterPlanPlotService {
   /**
    * Calculates a safe interior point (approximate pole of inaccessibility)
    * that maximizes clearance from all polygon boundaries.
+   * Strategy:
+   *  Phase 1 — Exact Shoelace centroid: perfect for all rectangular plots.
+   *  Phase 2 — Pole of Inaccessibility grid search: used only when the
+   *             centroid is too close to a boundary (corner / curved plots).
    */
   private getVisualCenter(ring: number[][]): [number, number] {
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    for (const pt of ring) {
-      if (pt[0] < minX) minX = pt[0];
-      if (pt[1] < minY) minY = pt[1];
-      if (pt[0] > maxX) maxX = pt[0];
-      if (pt[1] > maxY) maxY = pt[1];
-    }
-    
-    const isInside = (p: [number, number]) => {
-      let inside = false;
-      for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-        const xi = ring[i][0], yi = ring[i][1];
-        const xj = ring[j][0], yj = ring[j][1];
-        const intersect = ((yi > p[1]) !== (yj > p[1])) && (p[0] < (xj - xi) * (p[1] - yi) / (yj - yi) + xi);
-        if (intersect) inside = !inside;
-      }
-      return inside;
-    };
-
+    // ── shared helpers ────────────────────────────────────────────────────────
     const distToSegment = (p: [number, number], v: [number, number], w: [number, number]) => {
       const l2 = (w[0] - v[0]) ** 2 + (w[1] - v[1]) ** 2;
       if (l2 === 0) return Math.sqrt((p[0] - v[0]) ** 2 + (p[1] - v[1]) ** 2);
@@ -682,26 +668,70 @@ export class MasterPlanPlotService {
       return Math.sqrt((p[0] - (v[0] + t * (w[0] - v[0]))) ** 2 + (p[1] - (v[1] + t * (w[1] - v[1]))) ** 2);
     };
 
-    let bestP: [number, number] = [(minX + maxX) / 2, (minY + maxY) / 2];
-    let maxClearance = -Infinity;
-    
-    // 25x25 grid search for highest clearance
-    const stepX = (maxX - minX) / 25;
-    const stepY = (maxY - minY) / 25;
-    
-    for (let x = minX + stepX; x < maxX; x += stepX) {
-      for (let y = minY + stepY; y < maxY; y += stepY) {
+    const minClearanceOf = (p: [number, number]) => {
+      let minD = Infinity;
+      for (let i = 0; i < ring.length - 1; i++) {
+        const d = distToSegment(p, ring[i] as [number, number], ring[i + 1] as [number, number]);
+        if (d < minD) minD = d;
+      }
+      return minD;
+    };
+
+    const isInside = (p: [number, number]) => {
+      let inside = false;
+      for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+        const xi = ring[i][0], yi = ring[i][1];
+        const xj = ring[j][0], yj = ring[j][1];
+        const hit = ((yi > p[1]) !== (yj > p[1])) && (p[0] < (xj - xi) * (p[1] - yi) / (yj - yi) + xi);
+        if (hit) inside = !inside;
+      }
+      return inside;
+    };
+
+    // ── Phase 1: Exact Shoelace centroid ──────────────────────────────────────
+    const nPts = ring.length - 1; // closed ring — last pt === first pt
+    let area = 0, cx = 0, cy = 0;
+    for (let i = 0; i < nPts; i++) {
+      const x0 = ring[i][0],     y0 = ring[i][1];
+      const x1 = ring[i + 1][0], y1 = ring[i + 1][1];
+      const cross = x0 * y1 - x1 * y0;
+      area += cross;
+      cx   += (x0 + x1) * cross;
+      cy   += (y0 + y1) * cross;
+    }
+    const signedArea = area / 2;
+    const shoeP: [number, number] = [cx / (6 * signedArea), cy / (6 * signedArea)];
+
+    // Bounding box — used for threshold and grid step
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const pt of ring) {
+      if (pt[0] < minX) minX = pt[0];
+      if (pt[1] < minY) minY = pt[1];
+      if (pt[0] > maxX) maxX = pt[0];
+      if (pt[1] > maxY) maxY = pt[1];
+    }
+
+    // Accept the Shoelace centroid when it is well inside the polygon.
+    // Threshold = 15 % of the shorter bbox dimension.
+    const threshold = Math.min(maxX - minX, maxY - minY) * 0.15;
+    if (isInside(shoeP) && minClearanceOf(shoeP) >= threshold) {
+      return shoeP; // ✓ perfect center for all rectangular / regular plots
+    }
+
+    // ── Phase 2: Pole of Inaccessibility (corner / curved / irregular plots) ─
+    let bestP: [number, number] = shoeP;
+    let maxClearance = minClearanceOf(shoeP);
+
+    const steps = 30;
+    const stepX = (maxX - minX) / steps;
+    const stepY = (maxY - minY) / steps;
+
+    for (let x = minX + stepX * 0.5; x < maxX; x += stepX) {
+      for (let y = minY + stepY * 0.5; y < maxY; y += stepY) {
         const p: [number, number] = [x, y];
         if (isInside(p)) {
-          let minD = Infinity;
-          for (let i = 0; i < ring.length - 1; i++) {
-            const d = distToSegment(p, ring[i] as [number, number], ring[i+1] as [number, number]);
-            if (d < minD) minD = d;
-          }
-          if (minD > maxClearance) {
-            maxClearance = minD;
-            bestP = p;
-          }
+          const c = minClearanceOf(p);
+          if (c > maxClearance) { maxClearance = c; bestP = p; }
         }
       }
     }
